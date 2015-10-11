@@ -1,6 +1,9 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 
 # C extensions
 *.so
@@ -55,3 +58,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+.idea
+*.DS_Store
+
+taskmage/config.py
