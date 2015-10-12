@@ -21,7 +21,7 @@ with open("README.md", "rb") as f:
 
 setup(
     name = "taskmage",
-    packages = ["taskmage"],
+    packages = ["taskmage", "taskmage.db"],
     entry_points = {
         "console_scripts": ['taskmage = taskmage.taskmage:main']
     },
@@ -31,4 +31,8 @@ setup(
     author = "Christiaan B van Zyl",
     author_email = "christiaanvanzyl@gmail.com",
     url = "https://github.com/mozey/taskmage",
-    )
+    install_requires = [
+        "SQLAlchemy>=1.0.8",
+        "argparse>=1.4.0",
+    ]
+)
