@@ -1,16 +1,36 @@
 # http://stackoverflow.com/questions/6290162/how-to-automatically-reflect-database-to-sqlalchemy-declarative
-from sqlalchemy import event, create_engine, MetaData
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from contextlib import contextmanager
 from collections import OrderedDict
-import uuid
 import json
-import datetime
+import os, sys
+import re
+import tempfile
+from taskmage import config
 
-from ..config import config
+# The default database path is ~/.task/taskmage.db,
+# override this by setting taskmage.data.location="path/to/taskmage.db" in ~/.taskrc
+home_dir = os.path.expanduser('~')
+db_name = "taskmage.db"
+db_path = os.path.join(home_dir, ".taskmage", db_name)
 
-db_config = config["db"]
+# Try to override default database location
+try:
+    db_path_override = re.search(
+        'taskmage\.data\.location=(.*)',
+        open(os.path.join(home_dir, ".taskmagerc")).read(),
+    )
+    if db_path_override:
+        db_path = os.path.join(db_path_override.group(1), db_name)
+except FileNotFoundError as e:
+    pass
+
+# Use temp database for testing
+if config.testing:
+    db_path = os.path.join(tempfile.gettempdir(), db_name)
+
 
 # ..............................................................................
 # Serialize SqlAlchemy result to JSON
@@ -49,11 +69,11 @@ class MyBase():
     # Used for adding event listeners to all models
     # http://stackoverflow.com/a/13979333/639133
     @classmethod
-    def _all_subclasses(my_class):
+    def _all_subclasses(self):
         """ Get all subclasses of my_class, descending.
         So, if A is a subclass of B is a subclass of my_class,
         this will include A and B. (Does not include my_class) """
-        children = my_class.__subclasses__()
+        children = self.__subclasses__()
         result = []
         while children:
           next = children.pop()
@@ -63,37 +83,30 @@ class MyBase():
             children.append(subclass)
         return result
 
-# Create listener
-def update_created_modified_on_create_listener(mapper, connection, target):
-    if target.uuid is None:
-        # For all tables except task we want to generate UUIDs
-        uuid.uuid1()
-    target.modified = datetime.utcnow()
-
-# Update listener
-def update_modified_on_update_listener(mapper, connection, target):
-    target.modified = datetime.utcnow()
-
-for my_class in MyBase._all_subclasses():
-    event.listen(my_class, 'before_insert',  update_created_modified_on_create_listener)
-    event.listen(my_class, 'before_update',  update_modified_on_update_listener)
-
-
 # ..............................................................................
 Base = declarative_base()
 
 # Create an engine and get the metadata
 engine = create_engine(
-    "sqlite:///%s" % (
-        db_config["path"],
-    ),
+    "sqlite:///{}".format(db_path),
     # Write out all sql statements
-    echo=True,
+    echo=config.echo,
 )
-metadata = MetaData(bind=engine)
+
+# http://docs.sqlalchemy.org/en/rel_0_9/core/constraints.html
+convention = {
+  "ix": 'ix_%(column_0_label)s',
+  "uq": "uq_%(table_name)s_%(column_0_name)s",
+  "ck": "ck_%(table_name)s_%(constraint_name)s",
+  "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+  "pk": "pk_%(table_name)s"
+}
+
+metadata = MetaData(bind=engine, naming_convention=convention)
 
 session_factory = sessionmaker(bind=engine)
 
+# ..............................................................................
 # Don't use ScopedSession in the main script!
 @contextmanager
 def get_session():

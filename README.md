@@ -1,7 +1,3 @@
 # taskmage
-Time tracking for taskwarrior
+Command line TODO manager with time tracking using SQLite database
 
-TODO
-- start entry
-- stop entry
-- summary report for current time sheet 
