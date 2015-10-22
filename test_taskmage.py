@@ -6,7 +6,7 @@ import os, sys
 from taskmage import config
 
 config.testing = True
-config.echo = True
+# config.echo = True
 # config.echo = False
 
 from taskmage.db import db, models
@@ -14,11 +14,12 @@ from taskmage import cmd
 
 class Tests(unittest.TestCase):
     def setUp(self):
-        # Make sure we are working on an empty database
-        print("sqlite3 {}".format(db.db_path))
-        if os.path.isfile(db.db_path):
-            os.rename(db.db_path, db.db_path + ".old")
+        # Each test starts with an empty database
+        db.Base.metadata.drop_all(db.engine)
         models.create_all()
+
+        with db.get_session() as session:
+            db.session = session
 
 
     def test_add_task(self):
@@ -42,6 +43,8 @@ class Tests(unittest.TestCase):
 
 
     def test_update_task(self):
+        self.test_add_task()
+
         task_in = {
             "uuid": "11111111-1111-1111-1111-111111111111",
             "project": "magento",
@@ -55,16 +58,29 @@ class Tests(unittest.TestCase):
             self.assertEqual(task_in[key], task_out.__getattribute__(key))
 
 
-    def test_tasks(self):
+    def test_start_task(self):
+        self.test_add_task()
+
+        task_uuid = "11111111-1111-1111-1111-111111111111";
+        cmd.start_task(task_uuid)
+        entry = db.session.query(models.entry).filter_by(task_uuid=task_uuid).first()
+        print(entry)
+        # for key in entry.__getattributes__():
+        #     self.assertIsNotNone(entry.)
+
+
+    def test_complete_task(self):
+        self.test_start_task()
+
+
+    def test_stop_task(self):
+        cmd.stop_task("11111111-1111-1111-1111-111111111111")
+
+
+    def test_list_tasks(self):
+        self.test_add_task()
+
         cmd.tasks()
-
-
-    def test_start(self):
-        cmd.start("11111111-1111-1111-1111-111111111111")
-
-
-    def test_stop(self):
-        cmd.stop("11111111-1111-1111-1111-111111111111")
 
 
 if __name__ == "__main__":

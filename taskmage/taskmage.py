@@ -9,7 +9,7 @@ __version__ = "0.0.1"
 
 import argparse
 from collections import OrderedDict
-from taskmage.db import models
+from taskmage.db import db, models
 
 parser = argparse.ArgumentParser(description="Time tracking for taskwarrior")
 
@@ -35,19 +35,22 @@ def main():
     # Create or update database schema
     models.create_all()
 
-    if args.report is not None:
-        from taskmage.cmd import report
-        report(args.report)
+    with db.get_session() as session:
+        db.session = session
 
-    if args.tasks is not None:
-        from taskmage.cmd import tasks
-        tasks(args.tasks)
+        if args.report is not None:
+            from taskmage.cmd import report
+            report(args.report)
 
-    if args.add is not None:
-        from taskmage.cmd import add_entry
-        add_entry_args = {}
-        for key in add_command["task"]:
-            add_entry_args[key] = args.add[add_command["task"][key]]
-        # Expand dict to function args:
-        # http://stackoverflow.com/a/7745986/639133
-        add_entry(**add_entry_args)
+        if args.tasks is not None:
+            from taskmage.cmd import tasks
+            tasks(args.tasks)
+
+        if args.add is not None:
+            from taskmage.cmd import add_entry
+            add_entry_args = {}
+            for key in add_command["task"]:
+                add_entry_args[key] = args.add[add_command["task"][key]]
+            # Expand dict to function args:
+            # http://stackoverflow.com/a/7745986/639133
+            add_entry(**add_entry_args)

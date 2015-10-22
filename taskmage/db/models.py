@@ -51,7 +51,7 @@ class pointer(db.MyBase, db.Base):
     # http://stackoverflow.com/a/4567698/639133
     __table_args__ = {"sqlite_autoincrement": True}
 
-    id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
     task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True, default=None)
     task = relationship("task", backref=backref("_pointer", order_by=id))

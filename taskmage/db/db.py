@@ -5,15 +5,21 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from contextlib import contextmanager
 from collections import OrderedDict
 import json
-import os, sys
+import os
 import re
-import tempfile
 from taskmage import config
 
 # The default database path is ~/.task/taskmage.db,
 # override this by setting taskmage.data.location="path/to/taskmage.db" in ~/.taskrc
 home_dir = os.path.expanduser('~')
+
 db_name = "taskmage.db"
+if config.testing:
+    # It's annoying if the test database location is changing all the time.
+    # db_path = os.path.join(tempfile.gettempdir(), db_name)
+    # Rather used a fixed location
+    db_name = "taskmage.testing.db"
+
 db_path = os.path.join(home_dir, ".taskmage", db_name)
 
 # Try to override default database location
@@ -26,10 +32,6 @@ try:
         db_path = os.path.join(db_path_override.group(1), db_name)
 except FileNotFoundError as e:
     pass
-
-# Use temp database for testing
-if config.testing:
-    db_path = os.path.join(tempfile.gettempdir(), db_name)
 
 
 # ..............................................................................
@@ -107,7 +109,7 @@ metadata = MetaData(bind=engine, naming_convention=convention)
 session_factory = sessionmaker(bind=engine)
 
 # ..............................................................................
-# Don't use ScopedSession in the main script!
+# Use get_session when not using threads.
 @contextmanager
 def get_session():
     try:
@@ -120,28 +122,5 @@ def get_session():
         pass
     finally:
         db_session.close()
-
-
-# We have to use a ScopedSession with SQLAlchemy when using threads
-# http://stackoverflow.com/questions/6297404/multi-threaded-use-of-sqlalchemy
-# http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#contextual-thread-local-sessions
-ScopedSession = scoped_session(session_factory)
-
-@contextmanager
-def get_scoped_session():
-    try:
-        db_session = ScopedSession()
-        yield db_session
-    except Exception as e:
-        raise e
-    else:
-        # This gets executed if there was no exception
-        pass
-    finally:
-        # This gets executed after the with statement completes.
-        # Remove scoped session for the current thread.
-        # http://docs.sqlalchemy.org/en/improve_toc/orm/contextual.html#using-thread-local-scope-with-web-applications
-        ScopedSession.remove()
-
 
 
