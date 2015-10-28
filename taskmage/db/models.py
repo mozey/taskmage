@@ -35,7 +35,7 @@ class task(db.MyBase, db.Base):
 
     uuid = Column(String, primary_key=True)
     project = Column(String)
-    priority = Column(String)
+    urgency = Column(String)
     description = Column(String)
     modified = Column(db_timestamp)
     completed = Column(db_timestamp)
@@ -80,7 +80,6 @@ class tag(db.MyBase, db.Base):
     tag = Column(String)
     modified = Column(db_timestamp)
 
-
 # ..............................................................................
 
 # Create listener
@@ -97,6 +96,11 @@ def update_modified_on_update_listener(mapper, connection, target):
 for my_class in db.MyBase._all_subclasses():
     event.listen(my_class, 'before_insert',  update_created_modified_on_create_listener)
     event.listen(my_class, 'before_update',  update_modified_on_update_listener)
+
+
+# ..............................................................................
+# This is the allowed list of keywords for mods.
+mods = ["project", "urgency", "description"]
 
 
 # ..............................................................................

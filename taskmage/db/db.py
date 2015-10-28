@@ -8,6 +8,7 @@ import json
 import os
 import re
 from taskmage import config
+from datetime import datetime
 
 # The default database path is ~/.task/taskmage.db,
 # override this by setting taskmage.data.location="path/to/taskmage.db" in ~/.taskrc
@@ -33,6 +34,8 @@ try:
 except FileNotFoundError as e:
     pass
 
+if config.testing:
+    print("sqlite3", db_path);
 
 # ..............................................................................
 # Serialize SqlAlchemy result to JSON
@@ -46,8 +49,12 @@ class AlchemyEncoder(json.JSONEncoder):
             for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
                 data = obj.__getattribute__(field)
                 try:
-                    # this will fail on non encode-able values, like other classes
-                    json.dumps(data)
+                    if isinstance(data, datetime):
+                        data = datetime.strftime(data, "%Y-%m-%d %H:%M:%S")
+                    else:
+                        # this will fail on non encode-able values, like other classes
+                        json.dumps(data)
+
                     fields[field] = data
 
                 except TypeError:
