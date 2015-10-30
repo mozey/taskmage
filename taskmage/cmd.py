@@ -137,6 +137,24 @@ def complete_task(task_uuid):
     db.session.commit()
 
 
+def remove_task(task_uuid):
+    """
+    Delete the task if it has no timesheet entries, otherwise complete it.
+    """
+    task = get_task(task_uuid)
+    if task is None:
+        raise exceptions.TaskNotFound
+
+    entries = db.session.query(models.entry).filter_by(task_uuid=task.uuid).count()
+    if entries > 0:
+        complete_task(task_uuid)
+    else:
+        # TODO Prompt before deleting
+        db.session.delete(task)
+
+    db.session.commit()
+
+
 def current_sheet():
     '''
     Current timesheet is the current month by default
@@ -149,7 +167,7 @@ def timesheet_report(sheet, project=None):
 
 
 def tasks(filters={"mods": {}}):
-    select = """pointer.id as pointer_id, task.project, task.urgency,
+    select = """distinct pointer.id as pointer_id, task.project, task.urgency,
     task.description"""
 
     where = "1 = 1"
@@ -180,6 +198,7 @@ def tasks(filters={"mods": {}}):
     left join entry on task.uuid = entry.task_uuid
     where {where}
     order by pointer_id desc
+    limit 100
     """.format(select=select, where=where))
 
     cursor = db.session.execute(sql)
@@ -189,11 +208,18 @@ def tasks(filters={"mods": {}}):
     while task is not None:
         row = [task.pointer_id, task.project, task.urgency, task.description]
         if "start_time" in task._keymap and task.start_time is not None:
-            row.append(task.start_time[:19])
+            start_time = task.start_time[:19]
+            row.append(start_time)
+
+            now = datetime.utcnow()
+            elapsed = now - start_time
+            seconds_elapsed = elapsed.total_seconds()
+            row.append(seconds_elapsed)
+
         rows.append(row)
         task = cursor.fetchone();
 
     # List the task
-    print(tabulate(rows, headers=["id", "project", "urgency", "description", "started"]))
+    print(tabulate(rows, headers=["id", "project", "urgency", "description", "started", "elapsed"]))
 
 

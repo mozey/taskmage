@@ -5,6 +5,7 @@ import unittest
 import os, sys
 from taskmage import config
 from taskmage.exceptions import exceptions
+import json
 
 config.testing = True
 # config.echo = True
@@ -12,8 +13,9 @@ config.testing = True
 
 from taskmage.db import db, models
 from taskmage import cmd
+from taskmage import args
 
-class Tests(unittest.TestCase):
+class Db(unittest.TestCase):
     def setUp(self):
         # Each test starts with an empty database.
         # TODO More efficient way to clear all tables and sync the schema before each test?
@@ -106,9 +108,85 @@ class Tests(unittest.TestCase):
         self.assertIsNone(pointer)
 
 
+    def test_remove_task(self):
+        self.test_add_task()
+        cmd.remove_task(self.task_uuid1)
+        self.assertEqual(None, cmd.get_task(self.task_uuid1))
+
+        self.test_start_task()
+        cmd.remove_task(self.task_uuid1)
+        entry = db.session.query(models.entry).filter_by(task_uuid=self.task_uuid1).first()
+        self.assertIsNotNone(entry.end_time)
+
+
     def test_list_tasks(self):
         self.test_add_task()
-        cmd.tasks()
+        cmd.tasks({"mods": {"started": True}})
+
+
+class Args(unittest.TestCase):
+    def test_expand_command(self):
+        arg = "does_not_exist:something"
+        self.assertRaises(exceptions.CommandNotFound, args.expand_command, arg)
+
+        # Starting all commands with a different letter will prevent ambiguity,
+        # but we may run out of letters.
+        commands = models.commands
+        models.commands = ["ambiguous", "ambivalent"]
+        arg = "a"
+        self.assertRaises(exceptions.CommandAmbiguous, args.expand_command, arg)
+        models.commands = commands
+
+        command = models.commands[0]
+        result = args.expand_command("{}".format(command[:1], command))
+        self.assertEqual(result, command)
+
+
+    def test_expand_mod(self):
+        arg = "does_not_exist:something"
+        self.assertRaises(exceptions.ModNotFound, args.expand_mod, arg)
+
+        # Starting all mods with a different letter will prevent ambiguity,
+        # but we may run out of letters.
+        mods = models.mods
+        models.mods = ["ambiguous", "ambivalent"]
+        arg = "a:something"
+        self.assertRaises(exceptions.ModAmbiguous, args.expand_mod, arg)
+        models.mods = mods
+
+        mod = models.mods[0]
+        value = "something"
+        expanded = [mod, value]
+        result = args.expand_mod("{}:{}".format(mod[:1], value))
+        self.assertEqual(result, expanded)
+
+
+    def test_parse_add(self):
+        argv = [None, "a", "p:something", "This is", "urg:m", "the description"];
+        expected = '[{"mods": {}, "pointers": []}, "add", {"project": "something", "urgency": "m"}, "This is the description"]'
+        result = json.dumps(args.parse(argv))
+        self.assertEqual(expected, result)
+
+
+    def test_parse_begin(self):
+        argv = [None, "1", "beg"];
+        expected = '[{"mods": {}, "pointers": ["1"]}, "begin", {}, null]'
+        result = json.dumps(args.parse(argv))
+        self.assertEqual(expected, result)
+
+
+    def test_parse_list(self):
+        argv = [None, "l"];
+        expected = '[{"mods": {}, "pointers": []}, "ls", {}, null]'
+        result = json.dumps(args.parse(argv))
+        self.assertEqual(expected, result)
+
+
+    def test_parse_mod(self):
+        argv = [None, "mo", "p:foo", "u:l"];
+        expected = '[{"mods": {}, "pointers": []}, "mod", {"project": "foo", "urgency": "l"}, null]'
+        result = json.dumps(args.parse(argv))
+        self.assertEqual(expected, result)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,15 @@
+class CommandNotFound(Exception):
+    def __init__(self):
+        self.message = "Command not found"
+
+        super(CommandNotFound, self).__init__(self.message)
+
+class CommandAmbiguous(Exception):
+    def __init__(self):
+        self.message = "Command abbreviation ambiguous"
+
+        super(CommandAmbiguous, self).__init__(self.message)
+
 class FilterInvalid(Exception):
     def __init__(self, arg):
         self.message = "Unsupported filter {}".format(arg)
