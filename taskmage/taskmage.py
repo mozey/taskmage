@@ -54,8 +54,14 @@ def rolling_backup():
         print("Last backup was {} hours ago, new backup created".format(round(diff/60/60, 2)))
 
 
+def print_help():
+    # TODO Add help text
+    print("Python command line TODO manager with time tracking")
+    exit(0)
+
+
 def main():
-    rolling_backup();
+    rolling_backup()
 
     # Create or update database schema
     models.create_all()
@@ -67,13 +73,14 @@ def main():
     if len(sys.argv) > 1:
         first_arg = sys.argv[1]
     if first_arg.startswith("h"):
-        print("Python command line TODO manager with time tracking")
-        exit(0)
+        print_help()
 
     filters, command, mods, description = args.parse(sys.argv)
     # print(filters, command, mods, description)
 
-    if command is None or command == "ls":
+    if command == "ls":
+        if description not in filters["mods"] and description is not None:
+            filters["mods"]["description"] = description
         cmd.tasks(filters)
 
     elif command == "add":
@@ -126,17 +133,4 @@ def main():
             cmd.remove_task(task.uuid)
 
     else:
-        # Listing tasks is the default action.
-
-        # Being a bit lazy here, instead of making the regex parsing smarter
-        # we assume the "command" forms part of the description filter.
-        composite_description = ""
-        if command is not None:
-            composite_description += command
-        if description is not None:
-            composite_description += " " + description
-
-        # Override the description mod when using this form.
-        filters["mods"]["description"] = composite_description
-
-        cmd.tasks(filters)
+        print_help()

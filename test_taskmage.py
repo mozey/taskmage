@@ -179,8 +179,8 @@ class Args(unittest.TestCase):
 
 
     def test_parse_list(self):
-        argv = [None, "l"];
-        expected = '[{"mods": {}, "pointers": []}, "ls", {}, null]'
+        argv = [None, "l", "foo"];
+        expected = '[{"mods": {}, "pointers": []}, "ls", {}, "foo"]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 

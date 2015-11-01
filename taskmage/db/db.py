@@ -38,6 +38,9 @@ except FileNotFoundError as e:
 if config.testing:
     print("sqlite3", db_path);
 
+
+timestamp_format = "%Y-%m-%d %H:%M:%S"
+
 # ..............................................................................
 # Serialize SqlAlchemy result to JSON
 # http://stackoverflow.com/a/10664192/639133
@@ -51,7 +54,7 @@ class AlchemyEncoder(json.JSONEncoder):
                 data = obj.__getattribute__(field)
                 try:
                     if isinstance(data, datetime):
-                        data = datetime.strftime(data, "%Y-%m-%d %H:%M:%S")
+                        data = datetime.strftime(data, timestamp_format)
                     else:
                         # this will fail on non encode-able values, like other classes
                         json.dumps(data)

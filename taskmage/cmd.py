@@ -1,6 +1,6 @@
 from sqlalchemy.sql import text
 from taskmage.db import db, models
-from datetime import datetime
+import datetime
 from uuid import uuid4
 from taskmage.exceptions import exceptions
 from tabulate import tabulate
@@ -83,6 +83,21 @@ def touch_task(uuid, description, project=None, urgency=None):
     db.session.commit()
 
 
+def rounded_now():
+    # TODO Allow rounding to configured mark
+    # Return current UTC time rounded to 5 minute mark
+    now = datetime.datetime.utcnow()
+    discard = datetime.timedelta(
+        minutes=now.minute % 5,
+        seconds=now.second,
+        microseconds=now.microsecond
+    )
+    now -= discard
+    if discard >= datetime.timedelta(minutes=2.5):
+        now += datetime.timedelta(minutes=5)
+    return now
+
+
 def start_task(task_uuid):
     task = get_task(task_uuid)
     if task is None:
@@ -92,7 +107,9 @@ def start_task(task_uuid):
     entry = models.entry()
     entry.uuid = uuid4().__str__()
     entry.sheet = current_sheet()
-    entry.start_time = datetime.utcnow()
+
+    entry.start_time = rounded_now()
+
     entry.end_time = None
     entry.task_uuid = task_uuid
     db.session.add(entry)
@@ -109,7 +126,7 @@ def end_task(task_uuid):
     if entry is None:
         raise exceptions.TaskNotStarted
 
-    entry.end_time = datetime.utcnow()
+    entry.end_time = rounded_now()
 
     print("Task stopped: {}".format(entry.task.description))
 
@@ -128,7 +145,7 @@ def complete_task(task_uuid):
         pass
 
     # Set completed date on the task
-    task.completed = datetime.utcnow()
+    task.completed = rounded_now()
 
     # Reset the pointer to this task
     pointer = db.session.query(models.pointer).filter_by(task_uuid=task.uuid).first()
@@ -171,7 +188,13 @@ def current_sheet():
     '''
     Current timesheet is the current month by default
     '''
-    return datetime.strftime(datetime.now(), "%Y-%m")
+    return datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m")
+
+
+def time_from_seconds(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return "%d:%02d:%02d" % (h, m, s)
 
 
 def timesheet_report(sheet, project=None):
@@ -179,7 +202,6 @@ def timesheet_report(sheet, project=None):
 
 
 def tasks(filters={"mods": {}}):
-    print(filters)
     select = """distinct pointer.id as pointer_id, task.project, task.urgency,
     task.description"""
 
@@ -224,15 +246,16 @@ def tasks(filters={"mods": {}}):
             start_time = task.start_time[:19]
             row.append(start_time)
 
-            now = datetime.utcnow()
-            elapsed = now - start_time
-            seconds_elapsed = elapsed.total_seconds()
-            row.append(seconds_elapsed)
+            now = datetime.datetime.utcnow()
+            elapsed = now - datetime.datetime.strptime(start_time, db.timestamp_format)
+            hours_elapsed = time_from_seconds(elapsed.total_seconds())
+            row.append(hours_elapsed)
+
 
         rows.append(row)
         task = cursor.fetchone();
 
     # List the task
-    print(tabulate(rows, headers=["id", "project", "urgency", "description", "started", "elapsed"]))
+    print(tabulate(rows, headers=["id", "project", "urgency", "description", "started", "hours"]))
 
 
