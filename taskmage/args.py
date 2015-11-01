@@ -19,7 +19,7 @@ def expand_command(arg):
     if found_match is not None:
         return found_match.string
 
-    raise exceptions.CommandNotFound
+    return None
 
 
 def expand_mod(arg):
@@ -42,6 +42,11 @@ def expand_mod(arg):
         return [found_match.string, value]
 
     raise exceptions.ModNotFound
+
+
+def pointer_required(filters):
+    if len(filters["pointers"]) == 0:
+        raise exceptions.FilterRequired("Id")
 
 
 def parse(argv):

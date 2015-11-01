@@ -21,7 +21,8 @@ if config.testing:
     # Rather used a fixed location
     db_name = "taskmage.testing.db"
 
-db_path = os.path.join(home_dir, ".taskmage", db_name)
+app_path = os.path.join(home_dir, ".taskmage")
+db_path = os.path.join(app_path, db_name)
 
 # Try to override default database location
 try:

@@ -137,21 +137,33 @@ def complete_task(task_uuid):
     db.session.commit()
 
 
-def remove_task(task_uuid):
+def remove_task(task_uuid, prompt=True):
     """
-    Delete the task if it has no timesheet entries, otherwise complete it.
+    Prompt and then remove task and all related data
     """
     task = get_task(task_uuid)
     if task is None:
         raise exceptions.TaskNotFound
 
-    entries = db.session.query(models.entry).filter_by(task_uuid=task.uuid).count()
-    if entries > 0:
-        complete_task(task_uuid)
-    else:
-        # TODO Prompt before deleting
-        db.session.delete(task)
+    if prompt:
+        yesno = input("Delete everything for: {} ? y/n".format(task.description))
+        if yesno == "n":
+            print("Aborted")
+            return
 
+    entries = db.session.query(models.entry).filter_by(task_uuid=task.uuid)
+    for entry in entries:
+        db.session.delete(entry)
+
+    task_tags = db.session.query(models.task_tag).filter_by(task_uuid=task.uuid)
+    for task_tag in task_tags:
+        db.session.delete(task_tag)
+
+    pointer = db.session.query(models.pointer).filter_by(task_uuid=task.uuid).first()
+    if pointer is not None:
+        pointer.task_uuid = None
+
+    db.session.delete(task)
     db.session.commit()
 
 
@@ -167,6 +179,7 @@ def timesheet_report(sheet, project=None):
 
 
 def tasks(filters={"mods": {}}):
+    print(filters)
     select = """distinct pointer.id as pointer_id, task.project, task.urgency,
     task.description"""
 

@@ -110,13 +110,16 @@ class Db(unittest.TestCase):
 
     def test_remove_task(self):
         self.test_add_task()
-        cmd.remove_task(self.task_uuid1)
+        self.test_complete_task()
+
+        cmd.remove_task(self.task_uuid1, prompt=False)
         self.assertEqual(None, cmd.get_task(self.task_uuid1))
 
-        self.test_start_task()
-        cmd.remove_task(self.task_uuid1)
         entry = db.session.query(models.entry).filter_by(task_uuid=self.task_uuid1).first()
-        self.assertIsNotNone(entry.end_time)
+        self.assertEqual(None, entry)
+
+        task_tag = db.session.query(models.task_tag).filter_by(task_uuid=self.task_uuid1).first()
+        self.assertEqual(None, task_tag)
 
 
     def test_list_tasks(self):
@@ -127,7 +130,7 @@ class Db(unittest.TestCase):
 class Args(unittest.TestCase):
     def test_expand_command(self):
         arg = "does_not_exist:something"
-        self.assertRaises(exceptions.CommandNotFound, args.expand_command, arg)
+        self.assertEqual(None, args.expand_command(arg))
 
         # Starting all commands with a different letter will prevent ambiguity,
         # but we may run out of letters.
