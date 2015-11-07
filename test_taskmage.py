@@ -164,12 +164,20 @@ class Db(unittest.TestCase):
 
         db.session.commit()
 
-        response = cmd.timesheet_report(
-            sheet=sheet,
-            project=project,
-        )
+        filters={"mods": {
+            "sheet": sheet,
+            "project": project,
+        }}
+        response = cmd.timesheet_report(filters)
 
         self.assertEqual(response.data["rows"][0][4], "4:20")
+
+
+    def test_list_entries(self):
+        self.test_timesheet_report()
+        task = cmd.get_task(1)
+        response = cmd.list_entries(task.uuid)
+        response.print()
 
 
 class Args(unittest.TestCase):

@@ -76,14 +76,25 @@ def main():
         print_help()
 
     filters, command, mods, description = args.parse(sys.argv)
-    # print(filters, command, mods, description)
+    print(filters, command, mods, description)
 
     response = None
 
     if command == "ls":
-        if description not in filters["mods"] and description is not None:
-            filters["mods"]["description"] = description
-        response = cmd.tasks(filters)
+        if len(filters["pointers"]) > 0:
+            # List timesheet entries
+            for pointer_id in filters["pointers"]:
+                task = cmd.get_task(pointer_id)
+                response = cmd.list_entries(task.uuid)
+
+        else:
+            # List tasks
+            if "description" not in filters["mods"] and description is not None:
+                filters["mods"]["description"] = description
+            response = cmd.tasks(filters)
+
+    elif command == "timesheet":
+        response = cmd.timesheet_report()
 
     elif command == "add":
         params = {"description": description}

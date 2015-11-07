@@ -140,6 +140,30 @@ def end_task(task_uuid):
     return response
 
 
+def list_entries(task_uuid):
+    response = Response()
+    entries = db.session.query(models.entry)\
+        .filter_by(task_uuid=task_uuid)
+
+    rows = [];
+    for entry in entries:
+        # TODO Add hours
+        end_time = None
+        hours = None
+        if entry.end_time is not None:
+            end_time = entry.end_time.__str__()[:16]
+            hours = entry.end_time - entry.start_time
+        rows.append([entry.sheet, entry.start_time.__str__()[:16], end_time, hours])
+
+    db.session.commit()
+
+    response.data = {
+        "headers": ["sheet", "start", "end", "hours"],
+        "rows": rows
+    }
+    return response
+
+
 def complete_task(task_uuid):
     response = Response()
     task = get_task(task_uuid)
@@ -214,31 +238,44 @@ def time_from_seconds(seconds, show_seconds=False):
     return "%d:%02d" % (h, m)
 
 
-def timesheet_report(sheet, project=None):
+def timesheet_report(filters={"mods": {}}):
     response = Response()
-    sql = text("""
-    select
-    pointer.id as pointer_id, task.project as task_project, task.description as task_description, task.completed as task_completed,
+
+    select = """
+    pointer.id as pointer_id, task.project as task_project,
+    task.description as task_description, task.completed as task_completed,
     sum(strftime('%s', entry.end_time) - strftime('%s', entry.start_time)) as seconds
+    """
+
+    where = "1 = 1"
+    for mod in filters["mods"]:
+        if mod == "project":
+            where += " and project like '{project}%'"
+        elif mod == "description":
+            where += " and description like '%{description}%'"
+        elif mod == "sheet":
+            where += " and sheet like '{sheet}%'"
+    where = where.format(**filters["mods"])
+
+    sql = text("""
+    select {select}
     from task
     join pointer on task.uuid = pointer.task_uuid
     join entry on task.uuid = entry.task_uuid
-    where
-    task.project = '{project}'
-    and entry.sheet = '{sheet}'
+    where {where}
     group by task.uuid
     order by task.uuid;
-    """.format(
-        sheet=sheet,
-        project=project
-    ))
+    """.format(select=select, where=where))
 
     rows = []
     cursor = db.session.execute(sql)
     entry = cursor.fetchone();
 
     while entry is not None:
-        rows.append([entry.pointer_id, entry.task_project, entry.task_description, entry.task_completed[:16], time_from_seconds(entry.seconds)])
+        completed = None
+        if entry.task_completed is not None:
+            completed = entry.task_completed[:16]
+        rows.append([entry.pointer_id, entry.task_project, entry.task_description, completed, time_from_seconds(entry.seconds)])
         entry = cursor.fetchone();
 
     response.data = {

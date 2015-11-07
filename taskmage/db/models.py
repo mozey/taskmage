@@ -110,10 +110,10 @@ for my_class in db.MyBase._all_subclasses():
 
 # ..............................................................................
 # Allowed keywords for commands
-commands = ["add", "begin", "done", "end", "ls", "mod", "remove", "started", "x"]
+commands = ["add", "begin", "done", "end", "ls", "mod", "remove", "started", "timesheet"]
 
 # Allowed keywords for mods
-mods = ["project", "urgency", "description"]
+mods = ["description", "project", "sheet", "urgency"]
 
 
 # ..............................................................................
