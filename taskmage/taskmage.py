@@ -78,10 +78,12 @@ def main():
     filters, command, mods, description = args.parse(sys.argv)
     # print(filters, command, mods, description)
 
+    response = None
+
     if command == "ls":
         if description not in filters["mods"] and description is not None:
             filters["mods"]["description"] = description
-        cmd.tasks(filters)
+        response = cmd.tasks(filters)
 
     elif command == "add":
         params = {"description": description}
@@ -89,7 +91,7 @@ def main():
             params["project"] = mods["project"]
         if "urgency" in mods:
             params["urgency"] = mods["urgency"]
-        cmd.add_task(**params)
+        response = cmd.add_task(**params)
 
     elif command == "mod":
         args.pointer_required(filters)
@@ -102,35 +104,41 @@ def main():
                 params["project"] = mods["project"]
             if "urgency" in mods:
                 params["urgency"] = mods["urgency"]
-            cmd.touch_task(**params)
+            response = cmd.touch_task(**params)
 
     elif command == "done":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.get_task(pointer_id)
-            cmd.complete_task(task.uuid)
+            response = cmd.complete_task(task.uuid)
 
     elif command == "started":
         filters["mods"]["started"] = True
-        cmd.tasks(filters)
+        response = cmd.tasks(filters)
 
     elif command == "begin":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.get_task(pointer_id)
-            cmd.start_task(task.uuid)
+            response = cmd.start_task(task.uuid)
 
     elif command == "end":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.get_task(pointer_id)
-            cmd.end_task(task.uuid)
+            response = cmd.end_task(task.uuid)
 
     elif command == "remove":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.get_task(pointer_id)
-            cmd.remove_task(task.uuid)
+            response = cmd.remove_task(task.uuid)
+
+    elif command == "x":
+        response = cmd.timesheet_report(cmd.current_sheet())
 
     else:
         print_help()
+
+    if response:
+        response.print()

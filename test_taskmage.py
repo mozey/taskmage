@@ -6,6 +6,8 @@ import os, sys
 from taskmage import config
 from taskmage.exceptions import exceptions
 import json
+import datetime
+from uuid import uuid4
 
 config.testing = True
 # config.echo = True
@@ -123,8 +125,51 @@ class Db(unittest.TestCase):
 
 
     def test_list_tasks(self):
-        self.test_add_task()
-        cmd.tasks({"mods": {"started": True}})
+        self.test_start_task()
+        response = cmd.tasks({"mods": {"started": True}})
+        self.assertEqual(len(response.data["rows"]), 1)
+
+
+    def test_timesheet_report(self):
+        sheet = "2015-11"
+        project = "Project 1"
+
+        task = models.task()
+        task.uuid = self.task_uuid1
+        task.description = "Completed task"
+        task.project = project
+        task.urgency = "m"
+        task.completed = datetime.datetime.strptime("2015-11-03 09:21:00", db.timestamp_format)
+        db.session.add(task)
+
+        pointer = models.pointer()
+        pointer.task_uuid = self.task_uuid1
+        db.session.add(pointer)
+
+        entry = models.entry()
+        entry.uuid = uuid4().__str__()
+        entry.start_time = datetime.datetime.strptime("2015-11-01 15:20:00", db.timestamp_format)
+        entry.end_time = datetime.datetime.strptime("2015-11-01 17:05:00", db.timestamp_format)
+        entry.task_uuid = self.task_uuid1
+        entry.sheet = sheet
+        db.session.add(entry)
+
+        entry = models.entry()
+        entry.uuid = uuid4().__str__()
+        entry.start_time = datetime.datetime.strptime("2015-11-02 09:25:00", db.timestamp_format)
+        entry.end_time = datetime.datetime.strptime("2015-11-02 12:00:00", db.timestamp_format)
+        entry.task_uuid = self.task_uuid1
+        entry.sheet = sheet
+        db.session.add(entry)
+
+        db.session.commit()
+
+        response = cmd.timesheet_report(
+            sheet=sheet,
+            project=project,
+        )
+
+        self.assertEqual(response.data["rows"][0][4], "4:20")
 
 
 class Args(unittest.TestCase):

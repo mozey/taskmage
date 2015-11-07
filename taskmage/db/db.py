@@ -1,7 +1,7 @@
 # http://stackoverflow.com/questions/6290162/how-to-automatically-reflect-database-to-sqlalchemy-declarative
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from collections import OrderedDict
 import json
@@ -9,6 +9,9 @@ import os
 import re
 from taskmage import config
 from datetime import datetime
+
+# TODO Type annotations?
+session = None
 
 # The default database path is ~/.task/taskmage.db,
 # override this by setting taskmage.data.location="path/to/taskmage.db" in ~/.taskrc

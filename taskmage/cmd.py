@@ -3,7 +3,7 @@ from taskmage.db import db, models
 import datetime
 from uuid import uuid4
 from taskmage.exceptions import exceptions
-from tabulate import tabulate
+from taskmage.response import Response
 
 def get_task(uuid):
     '''
@@ -51,6 +51,7 @@ def touch_task(uuid, description, project=None, urgency=None):
     '''
     Create or update a task
     '''
+    response = Response();
     task = get_task(uuid)
     # Create the task if it doesn't exist
     if task is None:
@@ -66,7 +67,7 @@ def touch_task(uuid, description, project=None, urgency=None):
             task.urgency = urgency
         task.description = description
         db.session.add(task)
-        print("Creating task")
+        response.message = "Creating task"
 
     else:
         # Update existing task
@@ -78,9 +79,11 @@ def touch_task(uuid, description, project=None, urgency=None):
             if urgency in ["h", "m", "l"]:
                 task.urgency = urgency
         task.description = description
-        print("Updating existing task")
+        response.message = "Updating existing task"
 
     db.session.commit()
+
+    return response
 
 
 def rounded_now():
@@ -99,6 +102,7 @@ def rounded_now():
 
 
 def start_task(task_uuid):
+    response = Response()
     task = get_task(task_uuid)
     if task is None:
         raise exceptions.TaskNotFound
@@ -114,12 +118,14 @@ def start_task(task_uuid):
     entry.task_uuid = task_uuid
     db.session.add(entry)
 
-    print("Task started: {}".format(task.description))
-
     db.session.commit()
+
+    response.message = "Task started: {}".format(task.description)
+    return response
 
 
 def end_task(task_uuid):
+    response = Response()
     entry = db.session.query(models.entry)\
         .filter_by(task_uuid=task_uuid, end_time=None)\
         .first()
@@ -128,12 +134,14 @@ def end_task(task_uuid):
 
     entry.end_time = rounded_now()
 
-    print("Task stopped: {}".format(entry.task.description))
-
     db.session.commit()
+
+    response.message = "Task stopped: {}".format(entry.task.description)
+    return response
 
 
 def complete_task(task_uuid):
+    response = Response()
     task = get_task(task_uuid)
     if task is None:
         raise exceptions.TaskNotFound
@@ -153,11 +161,15 @@ def complete_task(task_uuid):
 
     db.session.commit()
 
+    response.message = "Task completed: {}".format(task.description)
+    return response
+
 
 def remove_task(task_uuid, prompt=True):
     """
     Prompt and then remove task and all related data
     """
+    response = Response()
     task = get_task(task_uuid)
     if task is None:
         raise exceptions.TaskNotFound
@@ -183,6 +195,9 @@ def remove_task(task_uuid, prompt=True):
     db.session.delete(task)
     db.session.commit()
 
+    response.message = "Task removed: {}".format(task.description)
+    return response
+
 
 def current_sheet():
     '''
@@ -191,18 +206,51 @@ def current_sheet():
     return datetime.datetime.strftime(datetime.datetime.now(), "%Y-%m")
 
 
-def time_from_seconds(seconds):
+def time_from_seconds(seconds, show_seconds=False):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    return "%d:%02d:%02d" % (h, m, s)
+    if show_seconds:
+        return "%d:%02d:%02d" % (h, m, s)
+    return "%d:%02d" % (h, m)
 
 
 def timesheet_report(sheet, project=None):
-    print(sheet, project)
+    response = Response()
+    sql = text("""
+    select
+    pointer.id as pointer_id, task.project as task_project, task.description as task_description, task.completed as task_completed,
+    sum(strftime('%s', entry.end_time) - strftime('%s', entry.start_time)) as seconds
+    from task
+    join pointer on task.uuid = pointer.task_uuid
+    join entry on task.uuid = entry.task_uuid
+    where
+    task.project = '{project}'
+    and entry.sheet = '{sheet}'
+    group by task.uuid
+    order by task.uuid;
+    """.format(
+        sheet=sheet,
+        project=project
+    ))
+
+    rows = []
+    cursor = db.session.execute(sql)
+    entry = cursor.fetchone();
+
+    while entry is not None:
+        rows.append([entry.pointer_id, entry.task_project, entry.task_description, entry.task_completed[:16], time_from_seconds(entry.seconds)])
+        entry = cursor.fetchone();
+
+    response.data = {
+        "headers": ["id", "project", "description", "completed", "hours"],
+        "rows": rows
+    }
+    return response
 
 
 def tasks(filters={"mods": {}}):
-    select = """distinct pointer.id as pointer_id, task.project, task.urgency,
+    response = Response()
+    select = """distinct pointer.id as pointer_id, task.modified, task.project, task.urgency,
     task.description"""
 
     where = "1 = 1"
@@ -241,7 +289,7 @@ def tasks(filters={"mods": {}}):
     rows = []
 
     while task is not None:
-        row = [task.pointer_id, task.project, task.urgency, task.description]
+        row = [task.pointer_id, task.modified[:16], task.project, task.urgency, task.description]
         if "start_time" in task._keymap and task.start_time is not None:
             start_time = task.start_time[:19]
             row.append(start_time)
@@ -255,7 +303,9 @@ def tasks(filters={"mods": {}}):
         rows.append(row)
         task = cursor.fetchone();
 
-    # List the task
-    print(tabulate(rows, headers=["id", "project", "urgency", "description", "started", "hours"]))
-
+    response.data = {
+        "headers": ["id", "created", "project", "urgency", "description", "started", "hours"],
+        "rows": rows
+    }
+    return response
 

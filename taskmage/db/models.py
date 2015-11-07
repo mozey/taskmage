@@ -1,17 +1,27 @@
 # from sqlalchemy import Table
-from sqlalchemy import Column, String, Integer, TIMESTAMP, event, ForeignKey
+from sqlalchemy import Column, String, Integer, event, ForeignKey
+from sqlalchemy.dialects.sqlite import DATETIME
 from sqlalchemy.orm import relationship, backref
 import uuid
 from datetime import datetime
 
 from ..db import db
 
-db_timestamp = TIMESTAMP(timezone="UTC")
+custom_datetime = DATETIME(
+    timezone="UTC",
+)
+
+# TODO Why doesn't custom datetime without milliseconds work?
+# custom_datetime = DATETIME(
+#     timezone="UTC",
+#     storage_format="%(year)04d/%(month)02d/%(day)02d %(hour)02d:%(min)02d:%(second)02d",
+#     regexp=r"(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)"
+# )
 
 
 # ..............................................................................
 # Example of reflecting existing database table
-# class Client(MyBase, db.Base):
+# class client(db.MyBase, db.Base):
 #     __table__ = Table('client', db.metadata, autoload=True)
 
 
@@ -21,9 +31,9 @@ class entry(db.MyBase, db.Base):
 
     uuid = Column(String, primary_key=True)
     sheet = Column(String, index=True)
-    start_time = Column(db_timestamp)
-    end_time = Column(db_timestamp)
-    modified = Column(db_timestamp)
+    start_time = Column(custom_datetime)
+    end_time = Column(custom_datetime)
+    modified = Column(custom_datetime)
 
     task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True, default=None)
     task = relationship("task", backref=backref("_entries", order_by=start_time))
@@ -37,8 +47,8 @@ class task(db.MyBase, db.Base):
     project = Column(String)
     urgency = Column(String)
     description = Column(String)
-    modified = Column(db_timestamp)
-    completed = Column(db_timestamp)
+    modified = Column(custom_datetime)
+    completed = Column(custom_datetime)
 
 
 # ..............................................................................
@@ -63,7 +73,7 @@ class task_tag(db.MyBase, db.Base):
 
     # Hash of uuid and description
     uuid = Column(String, primary_key=True)
-    modified = Column(db_timestamp)
+    modified = Column(custom_datetime)
 
     tag_uuid = Column(String, ForeignKey("tag.uuid"), nullable=True, default=None)
     tag = relationship("tag", backref=backref("_task_tags"))
@@ -78,7 +88,7 @@ class tag(db.MyBase, db.Base):
 
     uuid = Column(String, primary_key=True)
     tag = Column(String)
-    modified = Column(db_timestamp)
+    modified = Column(custom_datetime)
 
 # ..............................................................................
 
@@ -100,7 +110,7 @@ for my_class in db.MyBase._all_subclasses():
 
 # ..............................................................................
 # Allowed keywords for commands
-commands = ["add", "begin", "done", "end", "ls", "mod", "remove", "started"]
+commands = ["add", "begin", "done", "end", "ls", "mod", "remove", "started", "x"]
 
 # Allowed keywords for mods
 mods = ["project", "urgency", "description"]
