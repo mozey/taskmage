@@ -64,7 +64,7 @@ def parse(argv):
     mods = OrderedDict()
     description = None
 
-    mod_pattern = re.compile('^\w+:\w+$')
+    mod_pattern = re.compile('^\w+:[\w\W]+$')
     pointer_pattern = re.compile('^\d+$')
     # TODO range must support 1,2,3 or 1-3
     # range_pattern = re.compile('^(\d+,\d+)$')

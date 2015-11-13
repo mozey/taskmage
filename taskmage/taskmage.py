@@ -94,7 +94,7 @@ def main():
             response = cmd.tasks(filters)
 
     elif command == "timesheet":
-        response = cmd.timesheet_report()
+        response = cmd.timesheet_report(filters)
 
     elif command == "add":
         params = {"description": description}
@@ -144,9 +144,6 @@ def main():
         for pointer_id in filters["pointers"]:
             task = cmd.get_task(pointer_id)
             response = cmd.remove_task(task.uuid)
-
-    elif command == "x":
-        response = cmd.timesheet_report(cmd.current_sheet())
 
     else:
         print_help()

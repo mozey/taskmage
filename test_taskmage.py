@@ -171,6 +171,7 @@ class Db(unittest.TestCase):
         response = cmd.timesheet_report(filters)
 
         self.assertEqual(response.data["rows"][0][4], "4:20")
+        response.print()
 
 
     def test_list_entries(self):
@@ -241,6 +242,13 @@ class Args(unittest.TestCase):
     def test_parse_mod(self):
         argv = [None, "mo", "p:foo", "u:l"];
         expected = '[{"mods": {}, "pointers": []}, "mod", {"project": "foo", "urgency": "l"}, null]'
+        result = json.dumps(args.parse(argv))
+        self.assertEqual(expected, result)
+
+
+    def test_parse_timesheet(self):
+        argv = [None, "s:2015-11", "t"];
+        expected = '[{"mods": {"sheet": "2015-11"}, "pointers": []}, "timesheet", {}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 

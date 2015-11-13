@@ -238,7 +238,7 @@ def time_from_seconds(seconds, show_seconds=False):
     return "%d:%02d" % (h, m)
 
 
-def timesheet_report(filters={"mods": {}}):
+def timesheet_report(filters):
     response = Response()
 
     select = """
