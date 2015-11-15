@@ -78,7 +78,7 @@ def main():
         print_help()
 
     filters, command, mods, description = args.parse(sys.argv)
-    # print(filters, command, mods, description)
+    print(filters, command, mods, description)
 
     response = None
 
