@@ -16,3 +16,4 @@ class Response():
         elif (self.data):
             print(tabulate(self.data["rows"], headers=self.data["headers"]))
 
+
