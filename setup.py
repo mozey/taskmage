@@ -21,7 +21,11 @@ with open("README.md", "rb") as f:
 
 setup(
     name = "taskmage",
-    packages = ["taskmage", "taskmage.db"],
+    packages = [
+        "taskmage",
+        "taskmage.db",
+        "taskmage.exceptions",
+    ],
     entry_points = {
         "console_scripts": ['taskmage = taskmage.taskmage:main']
     },

@@ -4,7 +4,7 @@
 """taskmage.taskmage: provides entry point main()."""
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 import sys
 import os, time, shutil, glob, datetime
@@ -76,7 +76,7 @@ def main():
         print_help()
 
     filters, command, mods, description = args.parse(sys.argv)
-    print(filters, command, mods, description)
+    # print(filters, command, mods, description)
 
     response = None
 
