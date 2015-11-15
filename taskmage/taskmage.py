@@ -4,7 +4,7 @@
 """taskmage.taskmage: provides entry point main()."""
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 import sys
 import os, time, shutil, glob, datetime
