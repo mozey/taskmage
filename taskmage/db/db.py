@@ -14,7 +14,8 @@ from datetime import datetime
 session = None
 
 # The default database path is ~/.task/taskmage.db,
-# override this by setting taskmage.data.location="path/to/taskmage.db" in ~/.taskrc
+# override this by setting taskmage.data.location="path/to/taskmage.db"
+# in ~/.taskrc
 home_dir = os.path.expanduser('~')
 
 db_name = "taskmage.db"
@@ -41,25 +42,28 @@ except FileNotFoundError as e:
 if config.testing:
     print("sqlite3", db_path);
 
-
 timestamp_format = "%Y-%m-%d %H:%M:%S"
 
 # ..............................................................................
 # Serialize SqlAlchemy result to JSON
 # http://stackoverflow.com/a/10664192/639133
 from sqlalchemy.ext.declarative import DeclarativeMeta
+
+
 class AlchemyEncoder(json.JSONEncoder):
     def default(self, obj):
         fields = {}
         if isinstance(obj.__class__, DeclarativeMeta):
             # a SQLAlchemy class
-            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+            for field in [x for x in dir(obj) if
+                          not x.startswith('_') and x != 'metadata']:
                 data = obj.__getattribute__(field)
                 try:
                     if isinstance(data, datetime):
                         data = datetime.strftime(data, timestamp_format)
                     else:
-                        # this will fail on non encode-able values, like other classes
+                        # this will fail on non encode-able values,
+                        # like other classes
                         json.dumps(data)
 
                     fields[field] = data
@@ -92,11 +96,11 @@ class MyBase():
         children = self.__subclasses__()
         result = []
         while children:
-          next = children.pop()
-          subclasses = next.__subclasses__()
-          result.append(next)
-          for subclass in subclasses:
-            children.append(subclass)
+            next = children.pop()
+            subclasses = next.__subclasses__()
+            result.append(next)
+            for subclass in subclasses:
+                children.append(subclass)
         return result
 
 # ..............................................................................
@@ -111,11 +115,11 @@ engine = create_engine(
 
 # http://docs.sqlalchemy.org/en/rel_0_9/core/constraints.html
 convention = {
-  "ix": 'ix_%(column_0_label)s',
-  "uq": "uq_%(table_name)s_%(column_0_name)s",
-  "ck": "ck_%(table_name)s_%(constraint_name)s",
-  "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-  "pk": "pk_%(table_name)s"
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
 }
 
 metadata = MetaData(bind=engine, naming_convention=convention)
@@ -136,5 +140,3 @@ def get_session():
         pass
     finally:
         db_session.close()
-
-

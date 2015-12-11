@@ -13,7 +13,10 @@ class Response():
                 for message in self.message:
                     print("{}\n".format(message))
 
-        elif (self.data):
-            print(tabulate(self.data["rows"], headers=self.data["headers"]))
+        if (self.data):
+            if len(self.data["rows"]) > 0:
+                print(tabulate(self.data["rows"], headers=self.data["headers"]))
+            else:
+                print("Empty!")
 
 

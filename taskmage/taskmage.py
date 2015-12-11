@@ -3,10 +3,7 @@
 
 """taskmage.taskmage: provides entry point main()."""
 
-
 __version__ = "0.1.4"
-
-
 
 import sys
 import os, time, shutil, glob, datetime
@@ -26,7 +23,7 @@ def rolling_backup():
     """
     # TODO Make interval and backups_to_keep configurable
     backups_to_keep = 3
-    interval = 60 * 30 # 30 minutes
+    interval = 60 * 30  # 30 minutes
 
     timestamp_format = "%Y-%m-%d-%H-%M-%S"
 
@@ -37,7 +34,8 @@ def rolling_backup():
     last_backup_timestamp = last_backup[-19:]
 
     modified = time.mktime(
-        datetime.datetime.strptime(last_backup_timestamp, timestamp_format).timetuple()
+        datetime.datetime.strptime(last_backup_timestamp,
+                                   timestamp_format).timetuple()
     )
     now = datetime.datetime.utcnow()
     diff = now.timestamp() - modified
@@ -53,7 +51,8 @@ def rolling_backup():
 
     if diff > interval:
         shutil.copyfile(db.db_path, new_backup)
-        print("Last backup was {} hours ago, new backup created".format(round(diff/60/60, 2)))
+        print("Last backup was {} hours ago, new backup created".format(
+            round(diff / 60 / 60, 2)))
 
 
 def print_help():
@@ -78,7 +77,11 @@ def main():
         print_help()
 
     filters, command, mods, description = args.parse(sys.argv)
+    print("...................................................................")
+    print("debug:")
     print(filters, command, mods, description)
+    print("...................................................................")
+    print()
 
     response = None
 
@@ -86,17 +89,17 @@ def main():
         if len(filters["pointers"]) > 0:
             # List timesheet entries
             for pointer_id in filters["pointers"]:
-                task = cmd.get_task(pointer_id)
-                response = cmd.list_entries(task.uuid)
+                task = cmd.task.get_task(pointer_id)
+                response = cmd.task.list_entries(task.uuid)
 
         else:
             # List tasks
             if "description" not in filters["mods"] and description is not None:
                 filters["mods"]["description"] = description
-            response = cmd.tasks(filters)
+            response = cmd.task.ls(filters)
 
     elif command == "timesheet":
-        response = cmd.timesheet_report(filters)
+        response = cmd.timesheet.report(filters)
 
     elif command == "add":
         params = {"description": description}
@@ -104,7 +107,7 @@ def main():
             params["project"] = mods["project"]
         if "urgency" in mods:
             params["urgency"] = mods["urgency"]
-        response = cmd.add_task(**params)
+        response = cmd.task.add(**params)
 
     elif command == "mod":
         args.pointer_required(filters)
@@ -117,38 +120,41 @@ def main():
                 params["project"] = mods["project"]
             if "urgency" in mods:
                 params["urgency"] = mods["urgency"]
-            response = cmd.touch_task(**params)
+            response = cmd.task.mod(**params)
 
     elif command == "done":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
-            task = cmd.get_task(pointer_id)
-            response = cmd.complete_task(task.uuid)
+            task = cmd.task.get_task(pointer_id)
+            response = cmd.task.done(task.uuid)
 
-    elif command == "started":
-        filters["mods"]["started"] = True
-        response = cmd.tasks(filters)
-
-    elif command == "begin":
-        args.pointer_required(filters)
-        for pointer_id in filters["pointers"]:
-            task = cmd.get_task(pointer_id)
-            response = cmd.start_task(task.uuid)
+    elif command == "start":
+        # Start task if pointer given
+        if len(filters["pointers"]) > 0:
+            for pointer_id in filters["pointers"]:
+                task = cmd.task.get_task(pointer_id)
+                response = cmd.task.begin(task.uuid)
+        else:
+            # List started tasks
+            filters["mods"]["started"] = True
+            response = cmd.task.ls(filters)
 
     elif command == "end":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
-            task = cmd.get_task(pointer_id)
-            response = cmd.end_task(task.uuid)
+            task = cmd.task.get_task(pointer_id)
+            response = cmd.task.end(task.uuid)
 
     elif command == "remove":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
-            task = cmd.get_task(pointer_id)
-            response = cmd.remove_task(task.uuid)
+            task = cmd.task.get_task(pointer_id)
+            response = cmd.task.remove(task.uuid)
 
     else:
         print_help()
 
     if response:
         response.print()
+
+    print()

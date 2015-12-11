@@ -35,8 +35,10 @@ class entry(db.MyBase, db.Base):
     end_time = Column(custom_datetime)
     modified = Column(custom_datetime)
 
-    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True, default=None)
-    task = relationship("task", backref=backref("_entries", order_by=start_time))
+    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True,
+                       default=None)
+    task = relationship("task",
+                        backref=backref("_entries", order_by=start_time))
 
 
 # ..............................................................................
@@ -63,7 +65,8 @@ class pointer(db.MyBase, db.Base):
 
     id = Column(Integer, primary_key=True)
 
-    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True, default=None)
+    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True,
+                       default=None)
     task = relationship("task", backref=backref("_pointer", order_by=id))
 
 
@@ -75,10 +78,12 @@ class task_tag(db.MyBase, db.Base):
     uuid = Column(String, primary_key=True)
     modified = Column(custom_datetime)
 
-    tag_uuid = Column(String, ForeignKey("tag.uuid"), nullable=True, default=None)
+    tag_uuid = Column(String, ForeignKey("tag.uuid"), nullable=True,
+                      default=None)
     tag = relationship("tag", backref=backref("_task_tags"))
 
-    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True, default=None)
+    task_uuid = Column(String, ForeignKey("task.uuid"), nullable=True,
+                       default=None)
     task = relationship("task", backref=backref("_task_tags"))
 
 
@@ -90,6 +95,7 @@ class tag(db.MyBase, db.Base):
     tag = Column(String)
     modified = Column(custom_datetime)
 
+
 # ..............................................................................
 
 # Create listener
@@ -99,18 +105,21 @@ def update_created_modified_on_create_listener(mapper, connection, target):
         uuid.uuid4().__str__()
     target.modified = datetime.utcnow()
 
+
 # Update listener
 def update_modified_on_update_listener(mapper, connection, target):
     target.modified = datetime.utcnow()
 
+
 for my_class in db.MyBase._all_subclasses():
-    event.listen(my_class, 'before_insert',  update_created_modified_on_create_listener)
-    event.listen(my_class, 'before_update',  update_modified_on_update_listener)
+    event.listen(my_class, 'before_insert',
+                 update_created_modified_on_create_listener)
+    event.listen(my_class, 'before_update', update_modified_on_update_listener)
 
 
 # ..............................................................................
 # Allowed keywords for commands
-commands = ["add", "begin", "done", "end", "ls", "mod", "remove", "started", "timesheet"]
+commands = ["add", "done", "end", "ls", "mod", "remove", "start", "timesheet"]
 
 # Allowed keywords for mods
 mods = ["description", "project", "sheet", "urgency"]
@@ -119,4 +128,3 @@ mods = ["description", "project", "sheet", "urgency"]
 # ..............................................................................
 def create_all():
     db.Base.metadata.create_all(db.engine)
-

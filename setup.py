@@ -30,7 +30,7 @@ setup(
         "console_scripts": ['taskmage = taskmage.taskmage:main']
     },
     version = version,
-    description = "Time tracking for taskwarrior",
+    description = "Python command line TODO manager with time tracking using SQLite database",
     long_description = long_description,
     author = "Christiaan B van Zyl",
     author_email = "christiaanvanzyl@gmail.com",
