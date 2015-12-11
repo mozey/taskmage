@@ -211,6 +211,11 @@ def ls(filters={"mods": {}}):
                 select += ", max(entry.start_time) as start_time"
                 where += " and entry.start_time is not null"
                 where += " and entry.end_time is null"
+        elif mod == "modified":
+            if filters["mods"][mod] == "today":
+                where += " and task.modified >= date('now', 'start of day', 'localtime')"
+            else:
+                raise exceptions.NotImplemented()
 
     if "completed" not in where:
         where += " and completed is null"
