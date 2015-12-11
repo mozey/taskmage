@@ -94,7 +94,11 @@ def parse(argv):
             # Everything after the command is either mods or description
             if mod_pattern.match(arg):
                 mod = expand_mod(arg)
-                mods[mod[0]] = mod[1]
+                # Mod is an array of values
+                if mod[0] in mods:
+                    mods[mod[0]].append(mod[1])
+                else:
+                    mods[mod[0]] = [mod[1]]
 
             else:
                 if description is None:

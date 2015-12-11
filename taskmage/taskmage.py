@@ -14,6 +14,7 @@ import os, time, shutil, glob, datetime
 from taskmage.db import db, models
 from taskmage import cmd
 from taskmage import args
+from taskmage.exceptions import exceptions
 
 
 def rolling_backup():
@@ -103,10 +104,20 @@ def main():
 
     elif command == "add":
         params = {"description": description}
+
         if "project" in mods:
-            params["project"] = mods["project"]
+            if len(mods["project"]) > 1:
+                raise exceptions.ModMustHaveOneValue('"project"')
+            params["project"] = mods["project"][0]
+
         if "urgency" in mods:
-            params["urgency"] = mods["urgency"]
+            if len(mods["project"]) > 1:
+                raise exceptions.ModMustHaveOneValue('"urgency"')
+            params["urgency"] = mods["urgency"][0]
+
+        if "tag" in mods:
+            params["tags"] = mods["tag"]
+
         response = cmd.task.add(**params)
 
     elif command == "mod":
@@ -116,10 +127,16 @@ def main():
                 "uuid": pointer_id,
                 "description": description
             }
+
             if "project" in mods:
-                params["project"] = mods["project"]
+                params["project"] = mods["project"][0]
+
             if "urgency" in mods:
-                params["urgency"] = mods["urgency"]
+                params["urgency"] = mods["urgency"][0]
+
+            if "tag" in mods:
+                params["tags"] = mods["tag"]
+
             response = cmd.task.mod(**params)
 
     elif command == "done":

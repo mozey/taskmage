@@ -122,8 +122,10 @@ for my_class in db.MyBase._all_subclasses():
 commands = ["add", "done", "end", "ls", "mod", "remove", "start", "timesheet"]
 
 # Allowed keywords for mods
-mods = ["description", "project", ["modified", ["today"]], "sheet", "urgency"]
+mods = ["description", "project", ["modified", ["today"]], "sheet", "tag", "urgency"]
 
+# Allowed values for urgency
+urgency = ["h", "m", "l"]
 
 # ..............................................................................
 def create_all():

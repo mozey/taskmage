@@ -227,7 +227,7 @@ class Args(unittest.TestCase):
         argv = [None, "a", "p:something", "This is", "urg:m",
                 "the description"];
         expected = '[{"mods": {}, "pointers": []}, "add", {"project": ' + \
-                   '"something", "urgency": "m"}, "This is the description"]'
+                   '["something"], "urgency": ["m"]}, "This is the description"]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 
@@ -246,7 +246,7 @@ class Args(unittest.TestCase):
     def test_parse_mod(self):
         argv = [None, "mo", "p:foo", "u:l"];
         expected = '[{"mods": {}, "pointers": []}, "mod", {"project": ' + \
-                   '"foo", "urgency": "l"}, null]'
+                   '["foo"], "urgency": ["l"]}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 

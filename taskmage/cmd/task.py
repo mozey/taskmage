@@ -40,16 +40,17 @@ def get_unused_pointer():
         return pointer
 
 
-def add(description, project=None, urgency=None):
+def add(description, project=None, urgency=None, tags=[]):
     mod(
         uuid=uuid4().__str__(),
         project=project,
         description=description,
-        urgency=urgency
+        urgency=urgency,
+        tags=tags,
     )
 
 
-def mod(uuid, description, project=None, urgency=None):
+def mod(uuid, description, project=None, urgency=None, tags=[]):
     '''
     Create or update a task
     '''
@@ -65,7 +66,7 @@ def mod(uuid, description, project=None, urgency=None):
         pointer.task_uuid = task.uuid
 
         task.project = project
-        if urgency in ["h", "m", "l"]:
+        if urgency in models.urgency:
             task.urgency = urgency
         task.description = description
         db.session.add(task)
@@ -76,14 +77,14 @@ def mod(uuid, description, project=None, urgency=None):
         if project and len(project.strip()) > 0:
             task.project = project
         if urgency is not None:
-            if len(urgency) == 0:
-                # Set urgency to null
-                urgency = None
-            if urgency in ["h", "m", "l"]:
+            if urgency in models.urgency:
                 task.urgency = urgency
         if description and len(description.strip()) > 0:
             task.description = description
         response.message = "Updating existing task"
+
+    for tag in tags:
+        pass
 
     db.session.commit()
 
@@ -274,7 +275,7 @@ def remove(task_uuid, prompt=True):
 
     if prompt:
         yesno = input(
-            "Delete everything for: {} ? y/n".format(task.description))
+            "Delete everything for: {} ? y/n ".format(task.description))
         if yesno == "n":
             print("Aborted")
             return

@@ -34,6 +34,12 @@ class ModAmbiguous(Exception):
 
         super(ModAmbiguous, self).__init__(self.message)
 
+class ModMustHaveOneValue(Exception):
+    def __init__(self, mod):
+        self.message = "Mod {} must have one value".format(mod)
+
+        super(ModMustHaveOneValue, self).__init__(self.message)
+
 class NotImplemented(Exception):
     def __init__(self):
         self.message = "Not implemented"
