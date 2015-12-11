@@ -73,7 +73,8 @@ def mod(uuid, description, project=None, urgency=None):
 
     else:
         # Update existing task
-        task.project = project
+        if project and len(project.strip()) > 0:
+            task.project = project
         if urgency is not None:
             if len(urgency) == 0:
                 # Set urgency to null
