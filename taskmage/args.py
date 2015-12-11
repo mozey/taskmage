@@ -3,13 +3,13 @@ from taskmage.db import models
 from taskmage.exceptions import exceptions
 from collections import OrderedDict
 
+
 def expand_command(arg):
-    pattern = re.compile("^{}.*$".format(arg))
-    pattern_match = pattern.match
+    command_pattern = re.compile("^{}.*$".format(arg))
 
     found_match = None
     for command in models.commands:
-        match = pattern_match(command)
+        match = command_pattern.match(command)
         if match is not None:
             if found_match is None:
                 found_match = match
@@ -26,20 +26,35 @@ def expand_mod(arg):
     args = arg.split(":")
     key = args[0]
     value = args[1]
-    pattern = re.compile("^{}.*$".format(key))
-    pattern_match = pattern.match
+    key_pattern = re.compile("^{}.*$".format(key))
+    value_pattern = re.compile("^{}.*$".format(value))
 
-    found_match = None
+    found_key_match = None
+    found_value_match = value
     for mod in models.mods:
-        match = pattern_match(mod)
-        if match is not None:
-            if found_match is None:
-                found_match = match
+        # Some mods have preset values,
+        # if that is the case then the type will be list
+        if type(mod) == str:
+            # This mod does not have preset values
+            mod = [mod]
+
+        # Try to match the key
+        key_match = key_pattern.match(mod[0])
+        if key_match is not None:
+            if found_key_match is None:
+                found_key_match = key_match.string
             else:
                 raise exceptions.ModAmbiguous
 
-    if found_match is not None:
-        return [found_match.string, value]
+        # Only complete the value if this mod has preset values
+        if found_key_match is not None and len(mod) > 1:
+            for preset_value in mod[1]:
+                value_match = value_pattern.match(preset_value)
+                if value_match is not None:
+                    found_value_match = value_match.string
+
+    if found_key_match is not None:
+        return [found_key_match, found_value_match]
 
     raise exceptions.ModNotFound
 

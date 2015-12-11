@@ -122,7 +122,7 @@ for my_class in db.MyBase._all_subclasses():
 commands = ["add", "done", "end", "ls", "mod", "remove", "start", "timesheet"]
 
 # Allowed keywords for mods
-mods = ["description", "project", "sheet", "urgency"]
+mods = ["description", "project", ["modified", ["today"]], "sheet", "urgency"]
 
 
 # ..............................................................................

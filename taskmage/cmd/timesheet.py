@@ -2,6 +2,7 @@ from sqlalchemy.sql import text
 from taskmage.db import db
 from taskmage.response import Response
 from taskmage import utils
+from taskmage.exceptions import exceptions
 
 
 def report(filters):
@@ -21,6 +22,12 @@ def report(filters):
             where += " and description like '%{description}%'"
         elif mod == "sheet":
             where += " and sheet like '{sheet}%'"
+        elif mod == "modified":
+            if filters["mods"][mod] == "today":
+                where += " and task.modified >= date('now', 'start of day', 'localtime')"
+            else:
+                raise exceptions.NotImplemented()
+
     where = where.format(**filters["mods"])
 
     sql = text("""

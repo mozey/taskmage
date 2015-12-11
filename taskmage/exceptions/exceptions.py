@@ -34,6 +34,12 @@ class ModAmbiguous(Exception):
 
         super(ModAmbiguous, self).__init__(self.message)
 
+class NotImplemented(Exception):
+    def __init__(self):
+        self.message = "Not implemented"
+
+        super(NotImplemented, self).__init__(self.message)
+
 class TaskNotFound(Exception):
     def __init__(self):
         self.message = "Task not found"

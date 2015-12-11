@@ -251,8 +251,8 @@ class Args(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_parse_timesheet(self):
-        argv = [None, "s:2015-11", "t"];
-        expected = '[{"mods": {"sheet": "2015-11"}, "pointers": []}, ' + \
+        argv = [None, "m:t", "t"];
+        expected = '[{"mods": {"modified": "today"}, "pointers": []}, ' + \
                    '"timesheet", {}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
