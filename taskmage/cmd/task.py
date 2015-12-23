@@ -97,7 +97,7 @@ def mod(uuid, description, project=None, urgency=None, tags=[]):
     return response
 
 
-def begin(task_uuid):
+def start(task_uuid):
     response = Response()
     task = get_task(task_uuid)
     if task is None:
@@ -120,7 +120,7 @@ def begin(task_uuid):
     return response
 
 
-def end(task_uuid):
+def stop(task_uuid):
     response = Response()
     entry = db.session.query(models.entry) \
         .filter_by(task_uuid=task_uuid, end_time=None) \
@@ -144,7 +144,7 @@ def done(task_uuid):
 
     # Stop time sheet entry for this task
     try:
-        end(task.uuid)
+        stop(task.uuid)
     except exceptions.TaskNotStarted:
         pass
 

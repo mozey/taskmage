@@ -6,18 +6,15 @@ from collections import OrderedDict
 
 def expand_command(arg):
     command_pattern = re.compile("^{}.*$".format(arg))
+    matches = []
 
-    found_match = None
     for command in models.commands:
         match = command_pattern.match(command)
         if match is not None:
-            if found_match is None:
-                found_match = match
-            else:
-                raise exceptions.CommandAmbiguous
+            matches.append(match.string)
 
-    if found_match is not None:
-        return found_match.string
+    if len(matches) > 0:
+        return matches
 
     return None
 

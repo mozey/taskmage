@@ -59,6 +59,17 @@ def rolling_backup():
 def print_help():
     # TODO Add help text
     print("Python command line TODO manager with time tracking")
+    print("")
+    print("commands")
+    print("     ls")
+    print("     timesheet")
+    print("     add")
+    print("     mod")
+    print("     done")
+    print("     start")
+    print("     stop")
+    print("     remove")
+    print("")
     exit(0)
 
 
@@ -86,7 +97,10 @@ def main():
 
     response = None
 
-    if command == "ls":
+    if command is None:
+        print_help()
+
+    elif command[0] == "ls":
         if len(filters["pointers"]) > 0:
             # List timesheet entries
             for pointer_id in filters["pointers"]:
@@ -99,10 +113,10 @@ def main():
                 filters["mods"]["description"] = description
             response = cmd.task.ls(filters)
 
-    elif command == "timesheet":
+    elif command[0] == "timesheet":
         response = cmd.timesheet.report(filters)
 
-    elif command == "add":
+    elif command[0] == "add":
         params = {"description": description}
 
         if "project" in mods:
@@ -120,7 +134,7 @@ def main():
 
         response = cmd.task.add(**params)
 
-    elif command == "mod":
+    elif command[0] == "mod":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             params = {
@@ -139,30 +153,29 @@ def main():
 
             response = cmd.task.mod(**params)
 
-    elif command == "done":
+    elif command[0] == "done":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.task.get_task(pointer_id)
             response = cmd.task.done(task.uuid)
 
-    elif command == "start":
-        # Start task if pointer given
+    elif command == ["start", "stop"]:
+        # Stop or start task if pointer given
         if len(filters["pointers"]) > 0:
             for pointer_id in filters["pointers"]:
                 task = cmd.task.get_task(pointer_id)
-                response = cmd.task.begin(task.uuid)
+                try:
+                    # Try to stop this task
+                    response = cmd.task.stop(task.uuid)
+                except exceptions.TaskNotStarted:
+                    # Task not started, start it
+                    response = cmd.task.start(task.uuid)
         else:
             # List started tasks
             filters["mods"]["started"] = True
             response = cmd.task.ls(filters)
 
-    elif command == "end":
-        args.pointer_required(filters)
-        for pointer_id in filters["pointers"]:
-            task = cmd.task.get_task(pointer_id)
-            response = cmd.task.end(task.uuid)
-
-    elif command == "remove":
+    elif command[0] == "remove":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
             task = cmd.task.get_task(pointer_id)

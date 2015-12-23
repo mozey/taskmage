@@ -75,7 +75,7 @@ class Db(unittest.TestCase):
         self.test_add_task()
 
         task_uuid = self.task_uuid1;
-        cmd.task.begin(task_uuid)
+        cmd.task.start(task_uuid)
         entry = db.session.query(models.entry).filter_by(
             task_uuid=task_uuid).first()
 
@@ -87,11 +87,11 @@ class Db(unittest.TestCase):
         self.assertIsNotNone(entry.uuid)
 
     def test_end_task(self):
-        self.assertRaises(exceptions.TaskNotStarted, cmd.task.end,
+        self.assertRaises(exceptions.TaskNotStarted, cmd.task.stop,
                           task_uuid=self.task_uuid2)
 
         self.test_start_task()
-        cmd.task.end(self.task_uuid1)
+        cmd.task.stop(self.task_uuid1)
 
         entry = db.session.query(models.entry).filter_by(
             task_uuid=self.task_uuid1).first()
@@ -193,24 +193,24 @@ class Args(unittest.TestCase):
         arg = "does_not_exist:something"
         self.assertEqual(None, args.expand_command(arg))
 
-        # Starting all commands with a different letter will prevent ambiguity,
-        # but we may run out of letters.
+        # For ambiguous commands and array of matches is returned
         commands = models.commands
         models.commands = ["ambiguous", "ambivalent"]
         arg = "a"
-        self.assertRaises(exceptions.CommandAmbiguous, args.expand_command, arg)
+        matches = args.expand_command(arg)
+        self.assertEqual(2, len(matches))
         models.commands = commands
 
         command = models.commands[0]
-        result = args.expand_command("{}".format(command[:1], command))
-        self.assertEqual(result, command)
+        matches = args.expand_command("{}".format(command[:1]))
+        self.assertEqual(matches[0], command)
 
     def test_expand_mod(self):
         arg = "does_not_exist:something"
         self.assertRaises(exceptions.ModNotFound, args.expand_mod, arg)
 
         # Starting all mods with a different letter will prevent ambiguity,
-        # but we may run out of letters.
+        # but we may run out of letters. Maybe use same approach as commands.
         mods = models.mods
         models.mods = ["ambiguous", "ambivalent"]
         arg = "a:something"
@@ -226,26 +226,26 @@ class Args(unittest.TestCase):
     def test_parse_add(self):
         argv = [None, "a", "p:something", "This is", "urg:m",
                 "the description"];
-        expected = '[{"mods": {}, "pointers": []}, "add", {"project": ' + \
+        expected = '[{"mods": {}, "pointers": []}, ["add"], {"project": ' + \
                    '["something"], "urgency": ["m"]}, "This is the description"]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 
     def test_parse_start(self):
         argv = [None, "1", "st"];
-        expected = '[{"mods": {}, "pointers": ["1"]}, "start", {}, null]'
+        expected = '[{"mods": {}, "pointers": ["1"]}, ["start", "stop"], {}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 
     def test_parse_list(self):
         argv = [None, "l", "foo"];
-        expected = '[{"mods": {}, "pointers": []}, "ls", {}, "foo"]'
+        expected = '[{"mods": {}, "pointers": []}, ["ls"], {}, "foo"]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 
     def test_parse_mod(self):
         argv = [None, "mo", "p:foo", "u:l"];
-        expected = '[{"mods": {}, "pointers": []}, "mod", {"project": ' + \
+        expected = '[{"mods": {}, "pointers": []}, ["mod"], {"project": ' + \
                    '["foo"], "urgency": ["l"]}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
@@ -253,7 +253,7 @@ class Args(unittest.TestCase):
     def test_parse_timesheet(self):
         argv = [None, "m:t", "t"];
         expected = '[{"mods": {"modified": "today"}, "pointers": []}, ' + \
-                   '"timesheet", {}, null]'
+                   '["timesheet"], {}, null]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 
