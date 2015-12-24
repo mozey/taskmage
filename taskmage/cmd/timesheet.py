@@ -17,19 +17,28 @@ def report(filters):
     where = "1 = 1"
     for mod in filters["mods"]:
         if mod == "project":
-            where += " and project like '{project}%'"
+            where += " and project like :project"
+            # Match start
+            filters["mods"][mod] += "%"
+
         elif mod == "description":
-            where += " and description like '%{description}%'"
+            where += " and description like :description"
+            # Match anywhere
+            filters["mods"][mod] = "%{}%".format(filters["mods"][mod])
+
         elif mod == "sheet":
-            where += " and sheet like '{sheet}%'"
+            where += " and sheet like :sheet"
+            # Match start
+            filters["mods"][mod] += "%"
+
         elif mod == "modified":
             if filters["mods"][mod] == "today":
                 where += " and task.modified >= date('now', 'start of day', 'localtime')"
             else:
                 raise exceptions.NotImplemented()
 
-    where = where.format(**filters["mods"])
-
+    # Using Textual SQL
+    # http://docs.sqlalchemy.org/en/latest/core/tutorial.html#using-textual-sql
     sql = text("""
     select {select}
     from task
@@ -41,6 +50,7 @@ def report(filters):
     """.format(select=select, where=where))
 
     rows = []
+    sql = sql.bindparams(**filters["mods"])
     cursor = db.session.execute(sql)
     entry = cursor.fetchone();
 

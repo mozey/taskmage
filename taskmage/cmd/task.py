@@ -68,6 +68,8 @@ def mod(uuid, description, project=None, urgency=None, tags=[]):
         task.project = project
         if urgency in models.urgency:
             task.urgency = urgency
+        elif urgency is not None:
+            raise exceptions.InvalidValueForUrgency(urgency)
         task.description = description
         db.session.add(task)
         response.message = "Creating task"
@@ -76,13 +78,15 @@ def mod(uuid, description, project=None, urgency=None, tags=[]):
         # Update existing task
         if project and len(project.strip()) > 0:
             task.project = project
-        if urgency is not None:
-            if urgency in models.urgency:
-                task.urgency = urgency
+        if urgency in models.urgency:
+            task.urgency = urgency
+        elif urgency is not None:
+            raise exceptions.InvalidValueForUrgency(urgency)
         if description and len(description.strip()) > 0:
             task.description = description
         response.message = "Updating existing task"
 
+    # TODO tags
     for tag in tags:
         pass
 
@@ -201,18 +205,27 @@ def ls(filters={"mods": {}}):
     where = "1 = 1"
     for mod in filters["mods"]:
         if mod == "project":
-            where += " and project like '{project}%'"
+            where += " and project like :project"
+            # Match start
+            filters["mods"][mod] += "%"
+
         elif mod == "urgency":
-            where += " and urgency = '{urgency}'"
+            where += " and urgency = :urgency"
+
         elif mod == "description":
-            where += " and description like '%{description}%'"
+            where += " and description like :description"
+            # Match anywhere
+            filters["mods"][mod] = "%{}%".format(filters["mods"][mod])
+
         elif mod == "completed":
-            where += " and completed = '{completed}'"
+            where += " and completed = :completed"
+
         elif mod == "started":
             if filters["mods"]["started"]:
                 select += ", max(entry.start_time) as start_time"
                 where += " and entry.start_time is not null"
                 where += " and entry.end_time is null"
+
         elif mod == "modified":
             if filters["mods"][mod] == "today":
                 where += " and task.modified >= date('now', 'start of day', 'localtime')"
@@ -221,8 +234,6 @@ def ls(filters={"mods": {}}):
 
     if "completed" not in where:
         where += " and completed is null"
-
-    where = where.format(**filters["mods"])
 
     sql = text("""
     select {select}
@@ -234,6 +245,7 @@ def ls(filters={"mods": {}}):
     limit 100
     """.format(select=select, where=where))
 
+    sql = sql.bindparams(**filters["mods"])
     cursor = db.session.execute(sql)
     task = cursor.fetchone();
     rows = []
@@ -298,3 +310,34 @@ def remove(task_uuid, prompt=True):
 
     response.message = "Task removed: {}".format(task.description)
     return response
+
+
+def list_entries(task_uuid):
+    response = Response()
+    entries = db.session.query(models.entry)\
+        .filter_by(task_uuid=task_uuid)
+
+    rows = [];
+    total_hours = None
+    for entry in entries:
+        end_time = None
+        hours = None
+        if entry.end_time is not None:
+            end_time = entry.end_time.__str__()[:16]
+            hours = entry.end_time - entry.start_time
+            if total_hours is None:
+                total_hours = hours
+            else:
+                total_hours += hours
+        rows.append([entry.sheet, entry.start_time.__str__()[:16], end_time, hours])
+
+    rows.append([None, None, None, total_hours])
+
+    db.session.commit()
+
+    response.data = {
+        "headers": ["sheet", "start", "end", "hours"],
+        "rows": rows
+    }
+    return response
+

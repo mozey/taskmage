@@ -22,6 +22,12 @@ class FilterRequired(Exception):
 
         super(FilterRequired, self).__init__(self.message)
 
+class InvalidValueForUrgency(Exception):
+    def __init__(self, value):
+        self.message = "Invalid value for urgency: {}".format(value)
+
+        super(InvalidValueForUrgency, self).__init__(self.message)
+
 class ModNotFound(Exception):
     def __init__(self):
         self.message = "Mod not found"
@@ -57,5 +63,6 @@ class TaskNotStarted(Exception):
         self.message = "Task not started"
 
         super(TaskNotStarted, self).__init__(self.message)
+
 
 

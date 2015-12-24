@@ -91,11 +91,12 @@ def main():
     filters, command, mods, description = args.parse(sys.argv)
     print("...................................................................")
     print("debug:")
-    print(filters, command, mods, description)
+    print("filters", filters)
+    print("command", command)
+    print("mods", mods)
+    print("description", description)
     print("...................................................................")
     print()
-
-    response = None
 
     if command is None:
         print_help()
