@@ -80,6 +80,7 @@ def parse(argv):
     pointer_pattern = re.compile('^\d+$')
     # TODO range must support 1,2,3 or 1-3
     # range_pattern = re.compile('^(\d+,\d+)$')
+    tag_pattern = re.compile("^[+-].*")
 
     for arg in argv[1:]:
 
@@ -89,7 +90,13 @@ def parse(argv):
 
         if command is not None:
             # Everything after the command is either mods or description
-            if mod_pattern.match(arg):
+            if tag_pattern.match(arg):
+                if "tags" in mods:
+                    mods["tags"].append(arg)
+                else:
+                    mods["tags"] = [arg]
+
+            elif mod_pattern.match(arg):
                 mod = expand_mod(arg)
                 # Mod is an array of values
                 if mod[0] in mods:
@@ -108,7 +115,13 @@ def parse(argv):
 
         else:
             # Everything before the command goes into filters
-            if mod_pattern.match(arg):
+            if tag_pattern.match(arg):
+                if "tags" in mods:
+                    mods["tags"].append(arg)
+                else:
+                    mods["tags"] = [arg]
+
+            elif mod_pattern.match(arg):
                 mod = expand_mod(arg)
                 filters["mods"][mod[0]] = mod[1]
 

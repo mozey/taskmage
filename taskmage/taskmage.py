@@ -130,8 +130,8 @@ def main():
                 raise exceptions.ModMustHaveOneValue('"urgency"')
             params["urgency"] = mods["urgency"][0]
 
-        if "tag" in mods:
-            params["tags"] = mods["tag"]
+        if "tags" in mods:
+            params["tags"] = mods["tags"]
 
         response = cmd.task.add(**params)
 
@@ -149,8 +149,8 @@ def main():
             if "urgency" in mods:
                 params["urgency"] = mods["urgency"][0]
 
-            if "tag" in mods:
-                params["tags"] = mods["tag"]
+            if "tags" in mods:
+                params["tags"] = mods["tags"]
 
             response = cmd.task.mod(**params)
 

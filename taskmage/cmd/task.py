@@ -88,7 +88,13 @@ def mod(uuid, description, project=None, urgency=None, tags=[]):
 
     # TODO tags
     for tag in tags:
-        pass
+        if tag[:1] == "+":
+            # task_tag = models.task_tag()
+            # task_tag.task_uuid = task.uuid
+            pass
+
+        elif tag[:1] == "-":
+            pass
 
     db.session.commit()
 
@@ -202,23 +208,28 @@ def ls(filters={"mods": {}}):
     select = """distinct pointer.id as pointer_id, task.modified, task.project,
     task.urgency, task.description"""
 
+    params = {}
     where = "1 = 1"
     for mod in filters["mods"]:
         if mod == "project":
             where += " and project like :project"
             # Match start
             filters["mods"][mod] += "%"
+            params[mod] = filters["mods"][mod]
 
         elif mod == "urgency":
             where += " and urgency = :urgency"
+            params[mod] = filters["mods"][mod]
 
         elif mod == "description":
             where += " and description like :description"
             # Match anywhere
             filters["mods"][mod] = "%{}%".format(filters["mods"][mod])
+            params[mod] = filters["mods"][mod]
 
         elif mod == "completed":
             where += " and completed = :completed"
+            params[mod] = filters["mods"][mod]
 
         elif mod == "started":
             if filters["mods"]["started"]:
@@ -245,7 +256,7 @@ def ls(filters={"mods": {}}):
     limit 100
     """.format(select=select, where=where))
 
-    sql = sql.bindparams(**filters["mods"])
+    sql = sql.bindparams(**params)
     cursor = db.session.execute(sql)
     task = cursor.fetchone();
     rows = []

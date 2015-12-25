@@ -224,10 +224,10 @@ class Args(unittest.TestCase):
         self.assertEqual(result, expanded)
 
     def test_parse_add(self):
-        argv = [None, "a", "p:something", "This is", "urg:m",
+        argv = [None, "a", "p:something", "This is", "urg:m", "+tag1", "-tag2",
                 "the description"];
         expected = '[{"mods": {}, "pointers": []}, ["add"], {"project": ' + \
-                   '["something"], "urgency": ["m"]}, "This is the description"]'
+                   '["something"], "urgency": ["m"], "tags": ["+tag1", "-tag2"]}, "This is the description"]'
         result = json.dumps(args.parse(argv))
         self.assertEqual(expected, result)
 

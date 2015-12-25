@@ -74,7 +74,6 @@ class pointer(db.MyBase, db.Base):
 class task_tag(db.MyBase, db.Base):
     __tablename__ = 'task_tag'
 
-    # Hash of uuid and description
     uuid = Column(String, primary_key=True)
     modified = Column(custom_datetime)
 
