@@ -3,7 +3,7 @@
 
 """taskmage.taskmage: provides entry point main()."""
 
-__version__ = "0.1.4"
+__version__ = "0.2.0"
 
 import sys
 import os, time, shutil, glob, datetime
@@ -46,9 +46,10 @@ def rolling_backup():
         datetime.datetime.strftime(now, timestamp_format)
     )
 
-    if backups_to_keep > 0 and backup_files_len > backups_to_keep:
-        for i in range(backup_files_len - backups_to_keep):
-            os.remove(backup_files[i])
+    if backups_to_keep > 0:
+        if backup_files_len > backups_to_keep:
+            for i in range(backup_files_len - backups_to_keep):
+                os.remove(backup_files[i])
 
     if diff > interval:
         shutil.copyfile(db.db_path, new_backup)
@@ -80,6 +81,7 @@ def main():
     models.create_all()
 
     with db.get_session() as session:
+        """:type : orm.session"""
         db.session = session
 
     first_arg = ""
@@ -98,6 +100,9 @@ def main():
     print("...................................................................")
     print()
 
+    cmd_task = cmd.task.Task()
+    response = None
+
     if command is None:
         print_help()
 
@@ -105,17 +110,18 @@ def main():
         if len(filters["pointers"]) > 0:
             # List timesheet entries
             for pointer_id in filters["pointers"]:
-                task = cmd.task.get_task(pointer_id)
-                response = cmd.task.list_entries(task.uuid)
+                task = cmd_task.get_task(pointer_id)
+                response = cmd_task.list_entries(task.uuid)
 
         else:
             # List tasks
             if "description" not in filters["mods"] and description is not None:
                 filters["mods"]["description"] = description
-            response = cmd.task.ls(filters)
+            response = cmd_task.ls(filters)
 
     elif command[0] == "timesheet":
-        response = cmd.timesheet.report(filters)
+        cmd_timesheet = cmd.timesheet.Timesheet()
+        response = cmd_timesheet.report(filters)
 
     elif command[0] == "add":
         params = {"description": description}
@@ -133,7 +139,7 @@ def main():
         if "tags" in mods:
             params["tags"] = mods["tags"]
 
-        response = cmd.task.add(**params)
+        response = cmd_task.add(**params)
 
     elif command[0] == "mod":
         args.pointer_required(filters)
@@ -152,40 +158,40 @@ def main():
             if "tags" in mods:
                 params["tags"] = mods["tags"]
 
-            response = cmd.task.mod(**params)
+            response = cmd_task.mod(**params)
 
     elif command[0] == "done":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
-            task = cmd.task.get_task(pointer_id)
-            response = cmd.task.done(task.uuid)
+            task = cmd_task.get_task(pointer_id)
+            response = cmd_task.done(task.uuid)
 
     elif command == ["start", "stop"]:
         # Stop or start task if pointer given
         if len(filters["pointers"]) > 0:
             for pointer_id in filters["pointers"]:
-                task = cmd.task.get_task(pointer_id)
+                task = cmd_task.get_task(pointer_id)
                 try:
                     # Try to stop this task
-                    response = cmd.task.stop(task.uuid)
+                    response = cmd_task.stop(task.uuid)
                 except exceptions.TaskNotStarted:
                     # Task not started, start it
-                    response = cmd.task.start(task.uuid)
+                    response = cmd_task.start(task.uuid)
         else:
             # List started tasks
             filters["mods"]["started"] = True
-            response = cmd.task.ls(filters)
+            response = cmd_task.ls(filters)
 
     elif command[0] == "remove":
         args.pointer_required(filters)
         for pointer_id in filters["pointers"]:
-            task = cmd.task.get_task(pointer_id)
-            response = cmd.task.remove(task.uuid)
+            task = cmd_task.get_task(pointer_id)
+            response = cmd_task.remove(task.uuid)
 
     else:
         print_help()
 
-    if response:
+    if response is not None:
         response.print()
 
     print()

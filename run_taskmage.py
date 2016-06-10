@@ -4,8 +4,8 @@
 
 """Convenience wrapper for running taskmage directly from source tree."""
 
-from taskmage.taskmage import main
 from taskmage.exceptions import exceptions
+from taskmage.taskmage import main
 import sys
 
 if __name__ == '__main__':

@@ -28,10 +28,12 @@ class Db(unittest.TestCase):
         models.create_all()
 
         with db.get_session() as session:
-            db.session = session
+            self.session = session
 
         self.task_uuid1 = "11111111-1111-1111-1111-111111111111"
         self.task_uuid2 = "22222222-2222-2222-2222-222222222222"
+        self.cmd_task = cmd.task.Task()
+        self.cmd_timesheet = cmd.timesheet.Timesheet()
 
     def test_add_task(self):
         task_in = {
@@ -40,20 +42,20 @@ class Db(unittest.TestCase):
             "description": "This is the first task",
             "urgency": "h",
         }
-        cmd.task.mod(**task_in)
+        self.cmd_task.mod(**task_in)
 
-        task_from_uuid = cmd.task.get_task(task_in["uuid"])
+        task_from_uuid = self.cmd_task.get_task(task_in["uuid"])
         self.assertIsNotNone(task_from_uuid)
 
-        task_from_id = cmd.task.get_task(1)
+        task_from_id = self.cmd_task.get_task("1")
         self.assertIsNotNone(task_from_id)
 
         for key in task_in:
             self.assertEqual(task_in[key], task_from_uuid.__getattribute__(key))
             self.assertEqual(task_in[key], task_from_id.__getattribute__(key))
 
-        pointer = db.session.query(models.pointer).filter_by(
-            task_uuid=self.task_uuid1).first()
+        pointer = self.session.query(models.pointer).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertEqual(pointer.task_uuid, task_in["uuid"])
 
     def test_update_task(self):
@@ -65,9 +67,9 @@ class Db(unittest.TestCase):
             "description": "This is the updated task",
             "urgency": "l",
         }
-        cmd.task.mod(**task_in)
+        self.cmd_task.mod(**task_in)
 
-        task_out = cmd.task.get_task(task_in["uuid"])
+        task_out = self.cmd_task.get_task(task_in["uuid"])
         for key in task_in:
             self.assertEqual(task_in[key], task_out.__getattribute__(key))
 
@@ -75,9 +77,9 @@ class Db(unittest.TestCase):
         self.test_add_task()
 
         task_uuid = self.task_uuid1;
-        cmd.task.start(task_uuid)
-        entry = db.session.query(models.entry).filter_by(
-            task_uuid=task_uuid).first()
+        self.cmd_task.start(task_uuid)
+        entry = self.session.query(models.entry).filter_by(
+                task_uuid=task_uuid).first()
 
         self.assertIsNone(entry.end_time)
         self.assertIsNotNone(entry.modified)
@@ -87,50 +89,50 @@ class Db(unittest.TestCase):
         self.assertIsNotNone(entry.uuid)
 
     def test_end_task(self):
-        self.assertRaises(exceptions.TaskNotStarted, cmd.task.stop,
+        self.assertRaises(exceptions.TaskNotStarted, self.cmd_task.stop,
                           task_uuid=self.task_uuid2)
 
         self.test_start_task()
-        cmd.task.stop(self.task_uuid1)
+        self.cmd_task.stop(self.task_uuid1)
 
-        entry = db.session.query(models.entry).filter_by(
-            task_uuid=self.task_uuid1).first()
+        entry = self.session.query(models.entry).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertIsNotNone(entry.end_time)
 
     def test_complete_task(self):
         self.test_start_task()
 
-        cmd.task.done(self.task_uuid1)
+        self.cmd_task.done(self.task_uuid1)
 
-        task = cmd.task.get_task(self.task_uuid1)
+        task = self.cmd_task.get_task(self.task_uuid1)
         self.assertIsNotNone(task.completed)
 
-        entry = db.session.query(models.entry).filter_by(
-            task_uuid=self.task_uuid1).first()
+        entry = self.session.query(models.entry).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertIsNotNone(entry.end_time)
 
-        pointer = db.session.query(models.pointer).filter_by(
-            task_uuid=self.task_uuid1).first()
+        pointer = self.session.query(models.pointer).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertIsNone(pointer)
 
     def test_remove_task(self):
         self.test_add_task()
         self.test_complete_task()
 
-        cmd.task.remove(self.task_uuid1, prompt=False)
-        self.assertEqual(None, cmd.task.get_task(self.task_uuid1))
+        self.cmd_task.remove(self.task_uuid1, prompt=False)
+        self.assertEqual(None, self.cmd_task.get_task(self.task_uuid1))
 
-        entry = db.session.query(models.entry).filter_by(
-            task_uuid=self.task_uuid1).first()
+        entry = self.session.query(models.entry).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertEqual(None, entry)
 
-        task_tag = db.session.query(models.task_tag).filter_by(
-            task_uuid=self.task_uuid1).first()
+        task_tag = self.session.query(models.task_tag).filter_by(
+                task_uuid=self.task_uuid1).first()
         self.assertEqual(None, task_tag)
 
     def test_list_tasks(self):
         self.test_start_task()
-        response = cmd.task.ls({"mods": {"started": True}})
+        response = self.cmd_task.ls({"mods": {"started": True}})
         self.assertEqual(len(response.data["rows"]), 1)
 
     def test_timesheet_report(self):
@@ -144,11 +146,11 @@ class Db(unittest.TestCase):
         task.urgency = "m"
         task.completed = datetime.datetime.strptime("2015-11-03 09:21:00",
                                                     db.timestamp_format)
-        db.session.add(task)
+        self.session.add(task)
 
         pointer = models.pointer()
         pointer.task_uuid = self.task_uuid1
-        db.session.add(pointer)
+        self.session.add(pointer)
 
         entry = models.entry()
         entry.uuid = uuid4().__str__()
@@ -158,7 +160,7 @@ class Db(unittest.TestCase):
                                                     db.timestamp_format)
         entry.task_uuid = self.task_uuid1
         entry.sheet = sheet
-        db.session.add(entry)
+        self.session.add(entry)
 
         entry = models.entry()
         entry.uuid = uuid4().__str__()
@@ -168,23 +170,23 @@ class Db(unittest.TestCase):
                                                     db.timestamp_format)
         entry.task_uuid = self.task_uuid1
         entry.sheet = sheet
-        db.session.add(entry)
+        self.session.add(entry)
 
-        db.session.commit()
+        self.session.commit()
 
         filters = {"mods": {
             "sheet": sheet,
             "project": project,
         }}
-        response = cmd.timesheet.report(filters)
+        response = self.cmd_timesheet.report(filters)
 
         self.assertEqual(response.data["rows"][0][4], "4:20")
         response.print()
 
     def test_list_entries(self):
         self.test_timesheet_report()
-        task = cmd.task.get_task(1)
-        response = cmd.task.entries(task.uuid)
+        task = self.cmd_task.get_task("1")
+        response = self.cmd_task.entries(task.uuid)
         response.print()
 
 

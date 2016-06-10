@@ -8,8 +8,9 @@ from datetime import datetime
 from ..db import db
 
 custom_datetime = DATETIME(
-    timezone="UTC",
+        timezone="UTC",
 )
+
 
 # TODO Why doesn't custom datetime without milliseconds work?
 # custom_datetime = DATETIME(
@@ -115,16 +116,17 @@ for my_class in db.MyBase._all_subclasses():
                  update_created_modified_on_create_listener)
     event.listen(my_class, 'before_update', update_modified_on_update_listener)
 
-
 # ..............................................................................
 # Allowed keywords for commands
 commands = ["add", "done", "ls", "mod", "remove", "start", "stop", "timesheet"]
 
 # Allowed keywords for mods
-mods = ["description", "project", ["modified", ["today"]], "sheet", "tag", "urgency"]
+mods = ["description", "project", ["modified", ["today"]], "sheet", "tag",
+        "urgency"]
 
 # Allowed values for urgency
 urgency = ["h", "m", "l"]
+
 
 # ..............................................................................
 def create_all():

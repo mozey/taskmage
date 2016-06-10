@@ -1,7 +1,7 @@
 # http://stackoverflow.com/questions/6290162/how-to-automatically-reflect-database-to-sqlalchemy-declarative
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import orm
 from contextlib import contextmanager
 from collections import OrderedDict
 import json
@@ -9,9 +9,8 @@ import os
 import re
 from taskmage import config
 from datetime import datetime
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
-# TODO Type annotations?
-session = None
 
 # The default database path is ~/.task/taskmage.db,
 # override this by setting taskmage.data.location="path/to/taskmage.db"
@@ -40,16 +39,14 @@ except FileNotFoundError as e:
     pass
 
 if config.testing:
-    print("sqlite3", db_path);
+    print("sqlite3", db_path)
 
 timestamp_format = "%Y-%m-%d %H:%M:%S"
+
 
 # ..............................................................................
 # Serialize SqlAlchemy result to JSON
 # http://stackoverflow.com/a/10664192/639133
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
-
 class AlchemyEncoder(json.JSONEncoder):
     def default(self, obj):
         fields = {}
@@ -60,7 +57,7 @@ class AlchemyEncoder(json.JSONEncoder):
                 data = obj.__getattribute__(field)
                 try:
                     if isinstance(data, datetime):
-                        data = datetime.strftime(data, timestamp_format)
+                        data = data.strftime(timestamp_format)
                     else:
                         # this will fail on non encode-able values,
                         # like other classes
@@ -79,7 +76,7 @@ class AlchemyEncoder(json.JSONEncoder):
 
 
 # ..............................................................................
-class MyBase():
+class MyBase:
     # From event listeners post link below, doesn't work.
     # __abstract__ = True
 
@@ -124,7 +121,8 @@ convention = {
 
 metadata = MetaData(bind=engine, naming_convention=convention)
 
-session_factory = sessionmaker(bind=engine)
+session_factory = orm.sessionmaker(bind=engine)
+
 
 # ..............................................................................
 # Use get_session when not using threads.
@@ -132,6 +130,7 @@ session_factory = sessionmaker(bind=engine)
 def get_session():
     try:
         db_session = session_factory()
+        assert(isinstance(db_session, orm.Session))
         yield db_session
     except Exception as e:
         raise e
